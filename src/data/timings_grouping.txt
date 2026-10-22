@@ -1,0 +1,10 @@
+# Song tempo sections, one per line: start - end // BPM
+# Use "BPM -> BPM" for a section that slows or speeds up linearly.
+0:00 - 1:08 // 120
+1:16 - 1:46 // 132
+1:47 - 2:22 // 142
+2:31 - 3:04 // 155
+3:13 - 3:43 // 162
+3:52 - 4:21 // 175
+4:34 - 5:38 // 130
+5:38 - 6:34 // 130 -> 0
