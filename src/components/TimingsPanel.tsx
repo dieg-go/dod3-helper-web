@@ -37,9 +37,12 @@ export function TimingsPanel({
   };
 
   return (
-    <section className="panel panel-timings" aria-labelledby="timings-heading">
-      <div className="panel-heading">
-        <h2 id="timings-heading">Timings</h2>
+    <details className="panel panel-timings">
+      <summary className="panel-heading">
+        <h2 id="timings-heading">
+          Timings
+          <span className="panel-chevron" aria-hidden="true" />
+        </h2>
         {dirty ? (
           <span className="dirty-pill">
             <span className="dot" aria-hidden="true" />
@@ -48,7 +51,7 @@ export function TimingsPanel({
         ) : (
           <span className="panel-aside">Session only</span>
         )}
-      </div>
+      </summary>
 
       <p className="timings-summary">
         {count > 0 ? (
@@ -107,6 +110,6 @@ export function TimingsPanel({
         One millisecond value per line; commas and comments are accepted. Changes last only for
         this session, so export before closing the tab.
       </p>
-    </section>
+    </details>
   );
 }

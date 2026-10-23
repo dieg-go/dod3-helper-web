@@ -102,11 +102,14 @@ export function CalibrationPanel({
   const canHold = status === 'running';
 
   return (
-    <section className="panel panel-calibration" aria-labelledby="calibration-heading">
-      <div className="panel-heading">
-        <h2 id="calibration-heading">Calibration</h2>
+    <details className="panel panel-calibration">
+      <summary className="panel-heading">
+        <h2 id="calibration-heading">
+          Calibration
+          <span className="panel-chevron" aria-hidden="true" />
+        </h2>
         <span className="panel-aside">Applies live</span>
-      </div>
+      </summary>
 
       <div className="cal-row">
         <div className="cal-label">
@@ -221,6 +224,6 @@ export function CalibrationPanel({
           Remove next note <kbd aria-hidden="true">Y</kbd>
         </button>
       </div>
-    </section>
+    </details>
   );
 }

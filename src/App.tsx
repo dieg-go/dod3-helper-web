@@ -8,14 +8,6 @@ import { Toast } from './components/Toast';
 import { DEFAULT_TIMINGS_ERROR } from './data/defaults';
 import { useHelper } from './hooks/useHelper';
 import { FLOWER_URL } from './lib/assets';
-import type { RunStatus } from './lib/run';
-
-const STATUS_LABEL: Record<RunStatus, string> = {
-  idle: 'Ready',
-  running: 'Running',
-  paused: 'Paused',
-  finished: 'Complete',
-};
 
 export default function App() {
   const helper = useHelper();
@@ -56,10 +48,6 @@ export default function App() {
         </div>
 
         <div className="masthead-actions">
-          <span className={`status status-${helper.status}`}>
-            <span className="dot" aria-hidden="true" />
-            {STATUS_LABEL[helper.status]}
-          </span>
           <button
             className="btn btn-quiet help-button"
             type="button"
@@ -83,7 +71,7 @@ export default function App() {
           onResetRun={actions.resetRun}
         />
 
-        <aside className="rail" id="controls" aria-label="Run controls" tabIndex={-1}>
+        <aside className="rail" id="controls" aria-label="Run controls and tuning" tabIndex={-1}>
           <RunPanel
             status={helper.status}
             frame={frame}

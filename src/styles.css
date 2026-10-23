@@ -811,6 +811,46 @@ kbd {
   box-shadow: 0 0 0 4px rgba(216, 166, 87, 0.1);
 }
 
+/* Collapsible panels */
+
+summary.panel-heading {
+  margin-bottom: 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.panel[open] > summary.panel-heading {
+  margin-bottom: 9px;
+}
+
+summary.panel-heading::-webkit-details-marker {
+  display: none;
+}
+
+summary.panel-heading h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+summary.panel-heading:hover .panel-chevron {
+  color: var(--text);
+}
+
+.panel-chevron {
+  width: 0;
+  height: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid currentColor;
+  color: var(--muted-2);
+  transition: transform 160ms ease, color 160ms ease;
+}
+
+.panel[open] > summary .panel-chevron {
+  transform: rotate(90deg);
+}
+
 /* Footer */
 
 .footer {
