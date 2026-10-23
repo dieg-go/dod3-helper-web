@@ -32,10 +32,10 @@ export interface StageGeometry {
 
 const width = 800;
 const height = 700;
-const noteX = 400;
-const noteY = 100;
-const playerX = 400;
-const playerY = 600;
+const noteX = width / 2;
+const noteY = height / 7;
+const playerX = width /2;
+const playerY = height - 100;
 const showMs = 2000;
 const safeMs = 500;
 const distance = Math.hypot(playerX - noteX, playerY - noteY);

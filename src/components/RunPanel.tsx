@@ -27,10 +27,10 @@ export function RunPanel({ status, frame, canRun, onToggle, onResetRun }: RunPan
     <section className="panel panel-run" aria-labelledby="run-heading">
       <div className="panel-heading">
         <h2 id="run-heading">Run</h2>
-        <span className={`mini-status mini-status-${status}`}>
+        {/* <span className={`mini-status mini-status-${status}`}>
           <span className="dot" aria-hidden="true" />
           {status === 'running' ? 'Clock running' : status === 'paused' ? 'Clock paused' : 'Clock stopped'}
-        </span>
+        </span> */}
       </div>
 
       <p className="timer-label">Elapsed</p>

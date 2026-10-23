@@ -21,16 +21,33 @@ const mikhailPassImage = loadMikhail(MIKHAIL_PASS_URL);
 
 type Rgb = readonly [number, number, number];
 
-const INK = '26, 19, 29';
+const INK_DARK = '26, 19, 29';
+const INK_LIGHT = '244, 235, 239';
 const ROSE: Rgb = [196, 101, 128];
+const ROSE_LIGHT: Rgb = [232, 167, 185];
 const JADE: Rgb = [47, 122, 91];
+const JADE_LIGHT: Rgb = [112, 184, 149];
 
 function rgba(color: Rgb, alpha: number): string {
   return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`;
 }
 
-function ink(alpha: number): string {
-  return `rgba(${INK}, ${alpha})`;
+function ink(alpha: number, dark: boolean): string {
+  return `rgba(${dark ? INK_LIGHT : INK_DARK}, ${alpha * (dark ? 1.4 : 1)})`;
+}
+
+/** Lift a note colour toward white so it reads against the dark stage. */
+function lighten(color: Rgb, amount: number): Rgb {
+  return [
+    Math.round(color[0] + (255 - color[0]) * amount),
+    Math.round(color[1] + (255 - color[1]) * amount),
+    Math.round(color[2] + (255 - color[2]) * amount),
+  ] as const;
+}
+
+/** The head script and the theme toggle keep this attribute in sync. */
+function isDarkTheme(): boolean {
+  return document.documentElement.dataset.theme !== 'light';
 }
 
 function prefersReducedMotion(): boolean {
@@ -79,8 +96,9 @@ function drawMikhail(
  * dashed outer rail, short cardinal ticks, and a jade aperture that lifts off
  * the page with a soft halo.
  */
-function drawReticle(context: CanvasRenderingContext2D, charge: number): void {
+function drawReticle(context: CanvasRenderingContext2D, charge: number, dark: boolean): void {
   const { playerX, playerY, outerRadius, innerRadius } = GEOMETRY;
+  const jade = dark ? JADE_LIGHT : JADE;
 
   context.save();
   context.lineCap = 'round';
@@ -88,7 +106,7 @@ function drawReticle(context: CanvasRenderingContext2D, charge: number): void {
   // Outer rail.
   context.lineWidth = 1;
   context.setLineDash([2, 5]);
-  context.strokeStyle = ink(0.24);
+  context.strokeStyle = ink(0.24, dark);
   context.beginPath();
   context.arc(playerX, playerY, outerRadius, 0, Math.PI * 2);
   context.stroke();
@@ -100,7 +118,7 @@ function drawReticle(context: CanvasRenderingContext2D, charge: number): void {
     const major = index % 2 === 0;
     const from = outerRadius + (major ? 3 : 4);
     const to = outerRadius + (major ? 11 : 7);
-    context.strokeStyle = ink(major ? 0.34 : 0.16);
+    context.strokeStyle = ink(major ? 0.34 : 0.16, dark);
     context.lineWidth = major ? 1.5 : 1;
     context.beginPath();
     context.moveTo(playerX + Math.cos(angle) * from, playerY + Math.sin(angle) * from);
@@ -109,20 +127,20 @@ function drawReticle(context: CanvasRenderingContext2D, charge: number): void {
   }
 
   // Inner aperture halo, then the aperture itself.
-  context.strokeStyle = rgba(JADE, 0.12 + charge * 0.2);
+  context.strokeStyle = rgba(jade, 0.12 + charge * 0.2);
   context.lineWidth = 7;
   context.beginPath();
   context.arc(playerX, playerY, innerRadius, 0, Math.PI * 2);
   context.stroke();
 
-  context.strokeStyle = rgba(JADE, 0.92);
+  context.strokeStyle = rgba(jade, 0.92);
   context.lineWidth = 1.75;
   context.beginPath();
   context.arc(playerX, playerY, innerRadius, 0, Math.PI * 2);
   context.stroke();
 
   // Crosshair stubs between the aperture and the rail.
-  context.strokeStyle = ink(0.28);
+  context.strokeStyle = ink(0.28, dark);
   context.lineWidth = 1;
   context.beginPath();
   context.moveTo(playerX - innerRadius - 4, playerY);
@@ -137,15 +155,19 @@ function drawReticle(context: CanvasRenderingContext2D, charge: number): void {
 }
 
 /** Faint flight path from the flower down to the target. */
-function drawFlightPath(context: CanvasRenderingContext2D, active: boolean): void {
+function drawFlightPath(
+  context: CanvasRenderingContext2D,
+  active: boolean,
+  dark: boolean,
+): void {
   const { playerX, noteY, playerY, outerRadius } = GEOMETRY;
   const top = noteY;
   const bottom = playerY - outerRadius - 16;
 
   const gradient = context.createLinearGradient(0, top, 0, bottom);
-  gradient.addColorStop(0, ink(0));
-  gradient.addColorStop(0.25, ink(active ? 0.14 : 0.07));
-  gradient.addColorStop(1, ink(active ? 0.16 : 0.08));
+  gradient.addColorStop(0, ink(0, dark));
+  gradient.addColorStop(0.25, ink(active ? 0.14 : 0.07, dark));
+  gradient.addColorStop(1, ink(active ? 0.16 : 0.08, dark));
 
   context.save();
   context.strokeStyle = gradient;
@@ -167,9 +189,10 @@ function drawNoteRing(
   context: CanvasRenderingContext2D,
   note: VisibleNote,
   active: boolean,
+  dark: boolean,
 ): void {
   const { noteX, noteY, height } = GEOMETRY;
-  const color = note.color;
+  const color = dark ? lighten(note.color, 0.35) : note.color;
 
   context.save();
   context.lineCap = 'round';
@@ -206,13 +229,18 @@ function drawNoteRing(
 }
 
 /** Rose bloom behind Mikhail when a note lands inside the press window. */
-function drawPressAura(context: CanvasRenderingContext2D, charge: number): void {
+function drawPressAura(
+  context: CanvasRenderingContext2D,
+  charge: number,
+  dark: boolean,
+): void {
   const { playerX, playerY } = GEOMETRY;
+  const rose = dark ? ROSE_LIGHT : ROSE;
 
   const gradient = context.createRadialGradient(playerX, playerY, 4, playerX, playerY, 96);
-  gradient.addColorStop(0, rgba(ROSE, 0.2 + charge * 0.14));
-  gradient.addColorStop(0.55, rgba(ROSE, 0.07 + charge * 0.06));
-  gradient.addColorStop(1, rgba(ROSE, 0));
+  gradient.addColorStop(0, rgba(rose, 0.2 + charge * 0.14));
+  gradient.addColorStop(0.55, rgba(rose, 0.07 + charge * 0.06));
+  gradient.addColorStop(1, rgba(rose, 0));
 
   context.save();
   context.fillStyle = gradient;
@@ -221,7 +249,7 @@ function drawPressAura(context: CanvasRenderingContext2D, charge: number): void 
   context.fill();
 
   // A charging ring that closes in on the aperture as the note comes due.
-  context.strokeStyle = rgba(ROSE, 0.16 + charge * 0.5);
+  context.strokeStyle = rgba(rose, 0.16 + charge * 0.5);
   context.lineWidth = 1.5;
   context.beginPath();
   context.arc(playerX, playerY, GEOMETRY.innerRadius + 34 * (1 - charge), 0, Math.PI * 2);
@@ -229,7 +257,7 @@ function drawPressAura(context: CanvasRenderingContext2D, charge: number): void 
   context.restore();
 }
 
-function drawPressLabel(context: CanvasRenderingContext2D): void {
+function drawPressLabel(context: CanvasRenderingContext2D, dark: boolean): void {
   const { playerX, playerY } = GEOMETRY;
   const text = 'Press';
 
@@ -247,13 +275,13 @@ function drawPressLabel(context: CanvasRenderingContext2D): void {
 
   context.beginPath();
   context.roundRect(x, y, width, height, height / 2);
-  context.fillStyle = 'rgba(251, 247, 250, 0.82)';
+  context.fillStyle = dark ? 'rgba(26, 19, 29, 0.86)' : 'rgba(251, 247, 250, 0.82)';
   context.fill();
   context.strokeStyle = rgba(ROSE, 0.45);
   context.lineWidth = 1;
   context.stroke();
 
-  context.fillStyle = '#7d2f45';
+  context.fillStyle = dark ? '#f0b3c4' : '#7d2f45';
   context.fillText(text, playerX, y + height / 2 + 0.5);
   context.restore();
 }
@@ -281,6 +309,8 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
     return;
   }
 
+  const dark = isDarkTheme();
+
   context.setTransform(dpr, 0, 0, dpr, 0, 0);
   context.clearRect(0, 0, GEOMETRY.width, GEOMETRY.height);
 
@@ -290,19 +320,19 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
     ? Math.min(1, Math.max(0, 1 - Math.abs(pressing.dueInMs) / GEOMETRY.pressWindowMs))
     : 0;
 
-  drawFlightPath(context, running);
-  drawReticle(context, charge);
+  drawFlightPath(context, running, dark);
+  // drawReticle(context, charge, dark);
 
   if (running) {
     context.save();
     for (const note of frame.notes) {
-      drawNoteRing(context, note, note.press);
+      drawNoteRing(context, note, note.press, dark);
     }
     context.restore();
   }
 
   if (pressing) {
-    drawPressAura(context, charge);
+    drawPressAura(context, charge, dark);
   }
 
   // Draw the player above the note rings so Mikhail stays readable as a note
@@ -310,6 +340,6 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
   drawMikhail(context, frame.elapsed, pressing !== undefined);
 
   if (pressing) {
-    drawPressLabel(context);
+    drawPressLabel(context, dark);
   }
 }

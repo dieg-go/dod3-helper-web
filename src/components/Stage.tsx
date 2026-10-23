@@ -1,6 +1,4 @@
-import type { CSSProperties, RefObject } from 'react';
-import { FLOWER_URL } from '../lib/assets';
-import { GEOMETRY } from '../lib/timing';
+import type { RefObject } from 'react';
 import type { RunStatus } from '../lib/run';
 
 interface StageProps {
@@ -13,17 +11,13 @@ interface StageProps {
 }
 
 export function Stage({ canvasRef, status, total, dataError, onStart, onResetRun }: StageProps) {
-  const stageStyle = {
-    '--stage-flower': `url("${FLOWER_URL}")`,
-  } as CSSProperties;
-
   const missingTimings = dataError !== null && total === 0;
   const showOverlay =
     status === 'idle' || status === 'finished' || total === 0 || missingTimings;
 
   return (
     <section className="stage-frame" aria-label="Timing stage">
-      <div className="stage" style={stageStyle}>
+      <div className="stage">
         <canvas ref={canvasRef} className="stage-canvas" aria-hidden="true" />
 
         {status === 'paused' ? <div className="stage-paused">Paused</div> : null}
@@ -64,10 +58,10 @@ export function Stage({ canvasRef, status, total, dataError, onStart, onResetRun
         ) : null}
       </div>
 
-      <div className="stage-foot">
+      {/* <div className="stage-foot">
         <span>Flight {(GEOMETRY.showMs / 1000).toFixed(2)} s</span>
         <span>Window ±{Math.round(GEOMETRY.pressWindowMs)} ms</span>
-      </div>
+      </div> */}
     </section>
   );
 }

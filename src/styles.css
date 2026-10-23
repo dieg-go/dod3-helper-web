@@ -58,6 +58,28 @@
   --toast-bg: rgba(26, 19, 29, 0.97);
   --toast-ink: var(--text);
   --toast-shadow: 0 24px 50px -24px #000;
+  --stage-surface: var(--ink-800);
+  --stage-border: rgba(244, 235, 239, 0.12);
+  --stage-highlight: rgba(244, 235, 239, 0.06);
+  --stage-ring: rgba(196, 101, 128, 0.18);
+  --stage-card-bg: rgba(18, 13, 21, 0.82);
+  --stage-card-border: rgba(244, 235, 239, 0.14);
+  --stage-card-ink: var(--text);
+  --stage-card-copy: var(--muted);
+  --stage-card-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 30px 60px -38px rgba(0, 0, 0, 0.9);
+  --stage-card-btn-bg: var(--paper);
+  --stage-card-btn-border: rgba(255, 255, 255, 0.45);
+  --stage-card-btn-ink: var(--paper-ink);
+  --stage-card-btn-hover: #f3dde4;
+  --stage-card-btn-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 10px 22px -14px rgba(0, 0, 0, 0.8);
+  --stage-card-kbd-border: rgba(26, 19, 29, 0.2);
+  --stage-card-kbd-bg: rgba(26, 19, 29, 0.04);
+  --stage-card-kbd-ink: rgba(26, 19, 29, 0.65);
 
   --font-display: "Bodoni MT", Didot, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --font-ui: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont,
@@ -65,8 +87,7 @@
   --font-data: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
-/* Daylit counterpart: the same rose-and-plum score on pale paper, with the
-   stage left as the brightest object in the room. */
+/* Daylit counterpart: the same rose-and-plum score on pale paper. */
 :root[data-theme="light"] {
   color-scheme: light;
   --page: #f5eff2;
@@ -115,6 +136,28 @@
   --toast-bg: #fbf7fa;
   --toast-ink: var(--text);
   --toast-shadow: 0 24px 50px -24px rgba(36, 26, 39, 0.34);
+  --stage-surface: var(--paper);
+  --stage-border: rgba(255, 255, 255, 0.5);
+  --stage-highlight: rgba(255, 255, 255, 0.92);
+  --stage-ring: rgba(196, 101, 128, 0.14);
+  --stage-card-bg: rgba(251, 247, 250, 0.78);
+  --stage-card-border: rgba(255, 255, 255, 0.7);
+  --stage-card-ink: var(--paper-ink);
+  --stage-card-copy: var(--paper-copy);
+  --stage-card-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(26, 19, 29, 0.06),
+    0 30px 60px -38px rgba(26, 19, 29, 0.62);
+  --stage-card-btn-bg: linear-gradient(180deg, #241a26, #150e17);
+  --stage-card-btn-border: rgba(26, 19, 29, 0.9);
+  --stage-card-btn-ink: var(--paper);
+  --stage-card-btn-hover: linear-gradient(180deg, #33253a, #1d1420);
+  --stage-card-btn-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 22px -14px rgba(26, 19, 29, 0.8);
+  --stage-card-kbd-border: rgba(255, 255, 255, 0.22);
+  --stage-card-kbd-bg: rgba(255, 255, 255, 0.1);
+  --stage-card-kbd-ink: rgba(251, 247, 250, 0.72);
 }
 
 *,
@@ -534,44 +577,12 @@ kbd {
   width: 100%;
   aspect-ratio: 800 / 700;
   overflow: hidden;
-  background:
-    radial-gradient(72% 54% at 50% 86%, rgba(196, 101, 128, 0.1), transparent 74%),
-    radial-gradient(110% 80% at 50% -14%, rgba(255, 255, 255, 0.96), transparent 62%),
-    linear-gradient(168deg, #faf8fb 0%, #f4eef4 56%, #eee6ef 100%);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: var(--stage-surface);
+  border: 1px solid var(--stage-border);
   border-radius: 20px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -90px 100px -90px rgba(142, 58, 82, 0.16),
-    0 0 0 1px rgba(196, 101, 128, 0.14);
-}
-
-.stage::before {
-  position: absolute;
-  z-index: 0;
-  inset: 7% 12%;
-  background-image: var(--stage-flower);
-  background-repeat: no-repeat;
-  background-position: center 42%;
-  background-size: min(50%, 320px) auto;
-  opacity: 0.15;
-  mix-blend-mode: multiply;
-  filter: saturate(0.7);
-  content: "";
-  pointer-events: none;
-}
-
-.stage::after {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  background: radial-gradient(
-    122% 96% at 50% 46%,
-    transparent 58%,
-    rgba(26, 19, 29, 0.05) 100%
-  );
-  content: "";
-  pointer-events: none;
+    inset 0 1px 0 var(--stage-highlight),
+    0 0 0 1px var(--stage-ring);
 }
 
 .stage-canvas {
@@ -596,14 +607,11 @@ kbd {
 .stage-card {
   width: min(100%, 356px);
   padding: 28px 30px;
-  background: rgba(251, 247, 250, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: var(--stage-card-bg);
+  border: 1px solid var(--stage-card-border);
   border-radius: 18px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 0 0 1px rgba(26, 19, 29, 0.06),
-    0 30px 60px -38px rgba(26, 19, 29, 0.62);
-  color: var(--paper-ink);
+  box-shadow: var(--stage-card-shadow);
+  color: var(--stage-card-ink);
   text-align: center;
   pointer-events: auto;
   backdrop-filter: blur(10px) saturate(1.1);
@@ -620,7 +628,7 @@ kbd {
 
 .stage-card p {
   margin-bottom: 16px;
-  color: var(--paper-copy);
+  color: var(--stage-card-copy);
   font-size: 0.88rem;
   line-height: 1.5;
 }
@@ -635,22 +643,20 @@ kbd {
 }
 
 .stage-card .btn-primary {
-  background: linear-gradient(180deg, #241a26, #150e17);
-  border-color: rgba(26, 19, 29, 0.9);
-  color: var(--paper);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 10px 22px -14px rgba(26, 19, 29, 0.8);
+  background: var(--stage-card-btn-bg);
+  border-color: var(--stage-card-btn-border);
+  color: var(--stage-card-btn-ink);
+  box-shadow: var(--stage-card-btn-shadow);
 }
 
 .stage-card .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #33253a, #1d1420);
+  background: var(--stage-card-btn-hover);
 }
 
 .stage-card .btn-primary kbd {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(251, 247, 250, 0.72);
+  border-color: var(--stage-card-kbd-border);
+  background: var(--stage-card-kbd-bg);
+  color: var(--stage-card-kbd-ink);
 }
 
 .stage-card-hint {
@@ -658,7 +664,7 @@ kbd {
 }
 
 .stage-card:focus-visible {
-  outline-color: var(--rose-deep);
+  outline-color: var(--cued-ink);
 }
 
 .stage-paused {
