@@ -56,11 +56,11 @@ export type GroupColor = readonly [number, number, number];
 /** One colour per tempo section: pink, yellow, green, purple, blue, grey, pink, pink. */
 const SECTION_COLORS: readonly GroupColor[] = Object.freeze([
   [216, 27, 96],
-  [255, 255, 0],
+  [230, 230, 46],
   [46, 125, 50],
   [123, 31, 162],
   [21, 101, 192],
-  [96, 125, 139],
+  [180, 25, 25],
   [216, 27, 96],
   [216, 27, 96],
 ]);
