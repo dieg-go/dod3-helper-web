@@ -144,8 +144,8 @@ export function beatCount(section: TempoSection, elapsedMs: number): number {
 
 /**
  * Vertical offset for a beat-synchronised bob. The waveform starts at centre
- * and completes one cycle per beat; rests between tempo sections park Mikhail
- * at centre instead of drifting out of phase.
+ * and moves a half cycle per beat, peaking midway between beats; rests between
+ * tempo sections park Mikhail at centre instead of drifting out of phase.
  */
 export function beatOffset(
   elapsedMs: number,
@@ -157,5 +157,5 @@ export function beatOffset(
     return 0;
   }
 
-  return Math.sin(beatCount(section, elapsedMs) * Math.PI * 2) * amplitude;
+  return Math.sin(beatCount(section, elapsedMs) * Math.PI) * amplitude;
 }

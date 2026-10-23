@@ -46,13 +46,14 @@ describe('parseTempoSections', () => {
 });
 
 describe('beat phase', () => {
-  it('advances one cycle per beat', () => {
+  it('moves half a cycle per beat', () => {
     const section = steady(0, 60_000, 120);
 
     expect(beatCount(section, 0)).toBe(0);
     expect(beatCount(section, 500)).toBe(1);
     expect(beatCount(section, 1_000)).toBe(2);
-    expect(beatOffset(125, 10, [section])).toBeCloseTo(10);
+    expect(beatOffset(250, 10, [section])).toBeCloseTo(10);
+    expect(beatOffset(500, 10, [section])).toBeCloseTo(0);
   });
 
   it('integrates a linear tempo ramp', () => {
