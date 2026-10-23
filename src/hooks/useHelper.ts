@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { DEFAULT_TIMINGS, DEFAULT_TIMINGS_ERROR } from '../data/defaults';
 import { Clock } from '../lib/clock';
-import { drawStage } from '../lib/render';
+import { DEFAULT_STAGE_LAYERS, drawStage, type StageLayers } from '../lib/render';
 import type { RunStatus } from '../lib/run';
 import { resolveShortcut, type ShortcutAction } from '../lib/shortcuts';
 import {
@@ -54,6 +54,7 @@ export interface HelperActions {
   nudgeClock: (delta: number) => void;
   removeNext: () => void;
   setHold: (direction: 'slow' | 'fast', active: boolean) => void;
+  setLayer: (layer: keyof StageLayers, enabled: boolean) => void;
   importFile: (file: File) => Promise<void>;
   exportFile: () => void;
   resetTimings: () => void;
@@ -73,6 +74,7 @@ export interface UseHelperResult {
   confirmReset: boolean;
   toast: ToastState | null;
   holds: Holds;
+  layers: StageLayers;
   announcement: Announcement;
   actions: HelperActions;
 }
@@ -132,6 +134,7 @@ export function useHelper(): UseHelperResult {
   const statusRef = useRef<RunStatus>('idle');
   const skipRef = useRef(0);
   const holdsRef = useRef<Holds>(IDLE_HOLDS);
+  const layersRef = useRef<StageLayers>(DEFAULT_STAGE_LAYERS);
   const helpOpenRef = useRef(false);
   const undoRef = useRef<UndoSnapshot | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -150,6 +153,7 @@ export function useHelper(): UseHelperResult {
   const [confirmReset, setConfirmReset] = useState(false);
   const [toast, setToast] = useState<ToastState | null>(null);
   const [holds, setHolds] = useState<Holds>(IDLE_HOLDS);
+  const [layers, setLayers] = useState<StageLayers>(DEFAULT_STAGE_LAYERS);
   const [announcement, setAnnouncement] = useState<Announcement>({ id: 0, text: '' });
 
   const announce = useCallback((text: string) => {
@@ -452,6 +456,12 @@ export function useHelper(): UseHelperResult {
     setHolds(next);
   }, []);
 
+  const setLayer = useCallback((layer: keyof StageLayers, enabled: boolean) => {
+    const next = { ...layersRef.current, [layer]: enabled };
+    layersRef.current = next;
+    setLayers(next);
+  }, []);
+
   const loadSequence = useCallback(
     (next: number[], markDirty: boolean) => {
       const now = performance.now();
@@ -711,6 +721,7 @@ export function useHelper(): UseHelperResult {
         notes: current.notes,
         status: statusRef.current,
         elapsed: current.elapsed,
+        layers: layersRef.current,
       });
       raf = requestAnimationFrame(tick);
     };
@@ -756,6 +767,7 @@ export function useHelper(): UseHelperResult {
       nudgeClock,
       removeNext,
       setHold,
+      setLayer,
       importFile,
       exportFile,
       resetTimings,
@@ -776,6 +788,7 @@ export function useHelper(): UseHelperResult {
       resetRun,
       resetTimings,
       setHold,
+      setLayer,
       shiftAllNotes,
       toggleRun,
     ],
@@ -792,6 +805,7 @@ export function useHelper(): UseHelperResult {
     confirmReset,
     toast,
     holds,
+    layers,
     announcement,
     actions,
   };

@@ -945,6 +945,73 @@ kbd {
   box-shadow: 0 0 0 4px rgba(216, 166, 87, 0.1);
 }
 
+/* Stage layers */
+
+.layer-list {
+  display: grid;
+}
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line-soft);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.layer-row:first-child {
+  border-top: 0;
+}
+
+.layer-row input {
+  position: relative;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  appearance: none;
+  background: var(--track);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease;
+}
+
+.layer-row input::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: var(--muted-2);
+  border-radius: 50%;
+  content: '';
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.layer-row:hover input {
+  border-color: var(--line-strong);
+}
+
+.layer-row input:checked {
+  background: var(--rose-wash-3);
+  border-color: var(--rose-line);
+}
+
+.layer-row input:checked::after {
+  background: var(--rose-bright);
+  transform: translateX(14px);
+}
+
 /* Collapsible panels */
 
 summary.panel-heading {
@@ -1244,9 +1311,14 @@ summary.panel-heading:hover .panel-chevron {
   }
 
   .panel-calibration,
-  .panel-timings {
+  .panel-timings,
+  .panel-layers {
     padding-top: 18px;
     border-top: 1px solid var(--line);
+  }
+
+  .panel-layers {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1256,7 +1328,8 @@ summary.panel-heading:hover .panel-chevron {
   }
 
   .panel-calibration,
-  .panel-timings {
+  .panel-timings,
+  .panel-layers {
     padding-top: 18px;
     border-top: 1px solid var(--line);
   }

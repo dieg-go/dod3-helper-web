@@ -3,11 +3,11 @@ import { CalibrationPanel } from './components/CalibrationPanel';
 import { HelpDialog } from './components/HelpDialog';
 import { RunPanel } from './components/RunPanel';
 import { Stage } from './components/Stage';
+import { StageLayersPanel } from './components/StageLayersPanel';
 import { TimingsPanel } from './components/TimingsPanel';
 import { Toast } from './components/Toast';
 import { DEFAULT_TIMINGS_ERROR } from './data/defaults';
 import { useHelper } from './hooks/useHelper';
-import { FLOWER_URL } from './lib/assets';
 
 type Theme = 'light' | 'dark';
 
@@ -41,8 +41,8 @@ export default function App() {
     }
   };
 
-  // Pointer clicks should not leave a calibration button focused, otherwise a
-  // subsequent Space press would activate that button instead of start/pause.
+  // Pointer clicks should not leave a control focused, otherwise a subsequent
+  // Space press would activate that control instead of start/pause.
   useEffect(() => {
     const handlePointerUp = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse') {
@@ -50,7 +50,12 @@ export default function App() {
       }
       const target = event.target;
       if (target instanceof HTMLElement) {
-        target.closest('button')?.blur();
+        const label = target.closest('label');
+        if (label instanceof HTMLLabelElement) {
+          label.control?.blur();
+        } else {
+          target.closest('button')?.blur();
+        }
       }
     };
     window.addEventListener('pointerup', handlePointerUp);
@@ -65,9 +70,9 @@ export default function App() {
 
       <header className="masthead">
         <div className="brand">
-          <span className="brand-flower" aria-hidden="true">
+          {/* <span className="brand-flower" aria-hidden="true">
             <img src={FLOWER_URL} alt="" />
-          </span>
+          </span> */}
           <div className="brand-copy">
             <h1>Destroy the Flower</h1>
             <p>A timing helper for the final boss of Drakengard 3.</p>
@@ -150,6 +155,8 @@ export default function App() {
             onExport={actions.exportFile}
             onReset={actions.resetTimings}
           />
+
+          <StageLayersPanel layers={helper.layers} onSetLayer={actions.setLayer} />
         </aside>
       </main>
 

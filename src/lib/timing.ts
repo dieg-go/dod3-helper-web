@@ -25,7 +25,6 @@ export interface StageGeometry {
   innerRadius: number;
   pressWindowMs: number;
   removeAfterMs: number;
-  colorGrowth: number;
   holdSlowPerMs: number;
   holdFastPerMs: number;
 }
@@ -58,7 +57,6 @@ export const GEOMETRY: Readonly<StageGeometry> = Object.freeze({
   innerRadius,
   pressWindowMs: innerRadius / speed,
   removeAfterMs: innerRadius,
-  colorGrowth: (255 * 2) / safeMs,
   holdSlowPerMs: -0.12,
   holdFastPerMs: 0.18,
 });
@@ -80,13 +78,14 @@ export interface ParseResult {
 
 const MAX_NOTES = 20_000;
 
-function clampByte(value: number): number {
-  return Math.min(255, Math.max(0, value));
-}
-
-function pastColor(dueInMs: number): Rgb {
-  const shift = Math.trunc(GEOMETRY.colorGrowth * dueInMs);
-  return [clampByte(-shift), clampByte(255 + shift), 10];
+/** Lift a note colour toward white for the past-due hit flash. */
+function brighten(color: Rgb): Rgb {
+  const amount = 0.5;
+  return [
+    Math.round(color[0] + (255 - color[0]) * amount),
+    Math.round(color[1] + (255 - color[1]) * amount),
+    Math.round(color[2] + (255 - color[2]) * amount),
+  ] as const;
 }
 
 /**
@@ -179,11 +178,13 @@ export function visibleNotes(
       continue;
     }
 
+    const section = sectionColorAt(timings[index]!);
+
     notes.push({
       index,
       dueInMs,
       radius: Math.max(Math.round((GEOMETRY.showMs - dueInMs) * GEOMETRY.speed), 1),
-      color: dueInMs > 0 ? sectionColorAt(timings[index]!) : pastColor(dueInMs),
+      color: dueInMs > 0 ? section : brighten(section),
       press: Math.abs(dueInMs) <= GEOMETRY.pressWindowMs,
     });
   }

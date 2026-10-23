@@ -3,10 +3,28 @@ import { beatOffset } from './beat';
 import { GEOMETRY, type VisibleNote } from './timing';
 import type { RunStatus } from './run';
 
+/** Independent visual layers of the stage. */
+export interface StageLayers {
+  drawFlightPath: boolean;
+  drawReticle: boolean;
+  drawMikhail: boolean;
+  drawPressLabel: boolean;
+}
+
+/** The player sprite starts visible; every other layer is opt-in. */
+export const DEFAULT_STAGE_LAYERS: StageLayers = {
+  drawFlightPath: false,
+  drawReticle: false,
+  drawMikhail: true,
+  drawPressLabel: false,
+};
+
 export interface StageFrame {
   notes: readonly VisibleNote[];
   status: RunStatus;
   elapsed: number;
+  /** Omitted frames use {@link DEFAULT_STAGE_LAYERS}. */
+  layers?: StageLayers;
 }
 
 function loadMikhail(url: string): HTMLImageElement {
@@ -24,7 +42,8 @@ type Rgb = readonly [number, number, number];
 const INK_DARK = '26, 19, 29';
 const INK_LIGHT = '244, 235, 239';
 const ROSE: Rgb = [196, 101, 128];
-const ROSE_LIGHT: Rgb = [232, 167, 185];
+const GOLD: Rgb = [216, 166, 87];
+const GOLD_LIGHT: Rgb = [240, 203, 128];
 const JADE: Rgb = [47, 122, 91];
 const JADE_LIGHT: Rgb = [112, 184, 149];
 
@@ -73,7 +92,7 @@ function drawMikhail(
 
   const range = 2.2;
   const bob = prefersReducedMotion() ? 0 : beatOffset(elapsedMs, range);
-  const width = 80;
+  const width = 96;
   const height = width;
 
   // Let the wings extend just past the inner target now that the sprite is
@@ -228,19 +247,19 @@ function drawNoteRing(
   context.restore();
 }
 
-/** Rose bloom behind Mikhail when a note lands inside the press window. */
+/** Golden bloom behind Mikhail when a note lands inside the press window. */
 function drawPressAura(
   context: CanvasRenderingContext2D,
   charge: number,
   dark: boolean,
 ): void {
   const { playerX, playerY } = GEOMETRY;
-  const rose = dark ? ROSE_LIGHT : ROSE;
+  const gold = dark ? GOLD_LIGHT : GOLD;
 
   const gradient = context.createRadialGradient(playerX, playerY, 4, playerX, playerY, 96);
-  gradient.addColorStop(0, rgba(rose, 0.2 + charge * 0.14));
-  gradient.addColorStop(0.55, rgba(rose, 0.07 + charge * 0.06));
-  gradient.addColorStop(1, rgba(rose, 0));
+  gradient.addColorStop(0, rgba(gold, 0.2 + charge * 0.14));
+  gradient.addColorStop(0.55, rgba(gold, 0.07 + charge * 0.06));
+  gradient.addColorStop(1, rgba(gold, 0));
 
   context.save();
   context.fillStyle = gradient;
@@ -249,7 +268,7 @@ function drawPressAura(
   context.fill();
 
   // A charging ring that closes in on the aperture as the note comes due.
-  context.strokeStyle = rgba(rose, 0.16 + charge * 0.5);
+  context.strokeStyle = rgba(gold, 0.16 + charge * 0.5);
   context.lineWidth = 1.5;
   context.beginPath();
   context.arc(playerX, playerY, GEOMETRY.innerRadius + 34 * (1 - charge), 0, Math.PI * 2);
@@ -310,6 +329,7 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
   }
 
   const dark = isDarkTheme();
+  const layers = frame.layers ?? DEFAULT_STAGE_LAYERS;
 
   context.setTransform(dpr, 0, 0, dpr, 0, 0);
   context.clearRect(0, 0, GEOMETRY.width, GEOMETRY.height);
@@ -320,8 +340,12 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
     ? Math.min(1, Math.max(0, 1 - Math.abs(pressing.dueInMs) / GEOMETRY.pressWindowMs))
     : 0;
 
-  drawFlightPath(context, running, dark);
-  // drawReticle(context, charge, dark);
+  if (layers.drawFlightPath) {
+    drawFlightPath(context, running, dark);
+  }
+  if (layers.drawReticle) {
+    drawReticle(context, charge, dark);
+  }
 
   if (running) {
     context.save();
@@ -337,9 +361,11 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
 
   // Draw the player above the note rings so Mikhail stays readable as a note
   // passes through the target.
-  drawMikhail(context, frame.elapsed, pressing !== undefined);
+  if (layers.drawMikhail) {
+    drawMikhail(context, frame.elapsed, pressing !== undefined);
+  }
 
-  if (pressing) {
+  if (pressing && layers.drawPressLabel) {
     drawPressLabel(context, dark);
   }
 }

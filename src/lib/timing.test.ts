@@ -40,7 +40,6 @@ describe('geometry', () => {
     expect(GEOMETRY.innerRadius).toBe(24);
     expect(GEOMETRY.pressWindowMs).toBe(96);
     expect(GEOMETRY.removeAfterMs).toBe(24);
-    expect(GEOMETRY.colorGrowth).toBe(1.02);
   });
 });
 
@@ -107,7 +106,7 @@ describe('visibleNotes', () => {
     expect(note?.dueInMs).toBe(0);
     expect(note?.radius).toBe(500);
     expect(note?.press).toBe(true);
-    expect(note?.color).toEqual([0, 255, 10]);
+    expect(note?.color).toEqual([236, 141, 176]);
   });
 
   it('removes a note exactly 24 ms after its timestamp', () => {
@@ -124,7 +123,7 @@ describe('visibleNotes', () => {
     expect(notes[0]?.color).toEqual(sectionColorAt(1000));
   });
 
-  it('uses the press window boundaries and the past-due color', () => {
+  it('uses the press window boundaries and brightens past-due rings', () => {
     const early = visibleNotes([1000], 904);
     expect(early[0]?.dueInMs).toBe(96);
     expect(early[0]?.press).toBe(true);
@@ -138,7 +137,7 @@ describe('visibleNotes', () => {
     expect(justPast[0]?.dueInMs).toBe(-23);
     expect(justPast[0]?.press).toBe(true);
     expect(justPast[0]?.radius).toBe(506);
-    expect(justPast[0]?.color).toEqual([23, 232, 10]);
+    expect(justPast[0]?.color).toEqual([236, 141, 176]);
   });
 
   it('breaks once notes are beyond the show window', () => {

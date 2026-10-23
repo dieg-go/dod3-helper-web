@@ -53,10 +53,10 @@ export const TEMPO_SECTIONS = parseTempoSections(groupingText);
 
 export type GroupColor = readonly [number, number, number];
 
-/** One colour per tempo section: pink, gold, green, purple, blue, grey, pink, pink. */
+/** One colour per tempo section: pink, yellow, green, purple, blue, grey, pink, pink. */
 const SECTION_COLORS: readonly GroupColor[] = Object.freeze([
   [216, 27, 96],
-  [184, 134, 11],
+  [255, 255, 0],
   [46, 125, 50],
   [123, 31, 162],
   [21, 101, 192],
