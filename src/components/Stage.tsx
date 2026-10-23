@@ -52,8 +52,8 @@ export function Stage({ canvasRef, status, total, dataError, onStart, onResetRun
                 </>
               ) : (
                 <>
-                  <h2>Start when the first note breaks.</h2>
-                  <p>Use Space or Start. The first note is your zero.</p>
+                  <h2>Start the run at the same moment you hit the first note in-game.</h2>
+                  {/* <p>Use Space or Start. The first note is your zero.</p> */}
                   <button className="btn btn-primary" type="button" onClick={onStart}>
                     Start <kbd aria-hidden="true">Space</kbd>
                   </button>

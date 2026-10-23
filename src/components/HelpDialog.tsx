@@ -62,9 +62,9 @@ export function HelpDialog({ open, onClose }: HelpDialogProps) {
         </header>
 
         <p className="help-intro">
-          Start the run the moment the first note breaks. The helper counts from that instant, so
-          the first note is your zero.
+          Start your run the moment you hit the first note in-game.
         </p>
+        
 
         <div className="help-groups">
           <section className="help-group" aria-labelledby="help-run">

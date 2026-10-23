@@ -8,6 +8,21 @@
       content="A timing helper for the final boss of Drakengard 3: expanding-ring note cues, live calibration, and exportable timings."
     />
     <meta name="theme-color" content="#120D15" />
+    <script>
+      // Resolve the theme before first paint so a saved light choice never
+      // flashes the dark shell.
+      try {
+        var savedTheme = localStorage.getItem('dod3-theme');
+        document.documentElement.dataset.theme =
+          savedTheme === 'light' || savedTheme === 'dark'
+            ? savedTheme
+            : window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark';
+      } catch (error) {
+        // Blocked storage or matchMedia leaves the dark default in place.
+      }
+    </script>
     <link rel="icon" type="image/png" href="./flower.png" />
     <title>Destroy the Flower — Drakengard 3 helper</title>
   </head>

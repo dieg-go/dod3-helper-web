@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CalibrationPanel } from './components/CalibrationPanel';
 import { HelpDialog } from './components/HelpDialog';
 import { RunPanel } from './components/RunPanel';
@@ -9,10 +9,37 @@ import { DEFAULT_TIMINGS_ERROR } from './data/defaults';
 import { useHelper } from './hooks/useHelper';
 import { FLOWER_URL } from './lib/assets';
 
+type Theme = 'light' | 'dark';
+
+const THEME_KEY = 'dod3-theme';
+
+/** The head script resolves the saved or system theme before first paint. */
+function readTheme(): Theme {
+  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+}
+
 export default function App() {
   const helper = useHelper();
   const { actions, frame } = helper;
   const canRun = frame.total > 0;
+  const [theme, setTheme] = useState<Theme>(readTheme);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document
+      .querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'light' ? '#f5eff2' : '#120d15');
+  }, [theme]);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {
+      // Storage can be unavailable; the choice still applies for this visit.
+    }
+  };
 
   // Pointer clicks should not leave a calibration button focused, otherwise a
   // subsequent Space press would activate that button instead of start/pause.
@@ -49,6 +76,25 @@ export default function App() {
 
         <div className="masthead-actions">
           <button
+            className="theme-toggle"
+            type="button"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            {theme === 'dark' ? (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2.6v2.1M12 19.3v2.1M2.6 12h2.1M19.3 12h2.1M5.35 5.35l1.5 1.5M17.15 17.15l1.5 1.5M18.65 5.35l-1.5 1.5M6.85 17.15l-1.5 1.5" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20.2 14.6A8.6 8.6 0 0 1 9.4 3.8a8.6 8.6 0 1 0 10.8 10.8Z" />
+              </svg>
+            )}
+          </button>
+
+          {/* <button
             className="btn btn-quiet help-button"
             type="button"
             onClick={actions.openHelp}
@@ -57,7 +103,7 @@ export default function App() {
             aria-controls="controls-dialog"
           >
             Controls <kbd aria-hidden="true">?</kbd>
-          </button>
+          </button> */}
         </div>
       </header>
 

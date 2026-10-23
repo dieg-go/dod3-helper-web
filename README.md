@@ -12,7 +12,8 @@ The app is fully static: no backend, no accounts, no telemetry. It is ready to d
 - Lets you adjust the last note, the next note, every note, or the playback clock by 50 ms.
 - Supports removing upcoming notes with one-level undo.
 - Imports and exports the original one-value-per-line timing format.
-- Stays session-only: edits are never written to browser storage; export before closing.
+- Switches between dark and light themes; the choice is remembered between visits.
+- Stays session-only for timings: edits are never written to browser storage; export before closing.
 
 ## Run locally
 
@@ -76,7 +77,7 @@ The file format is one millisecond value per line. Import also accepts:
 
 Importing an invalid file leaves the current sequence untouched and reports the offending line. Export downloads `timings.txt` in the original format.
 
-Edits are held in memory only. There is deliberately no `localStorage`/`sessionStorage`; a leave warning appears when there are unsaved changes, and the footer repeats the session-only reminder.
+Edits are held in memory only; the theme choice is the sole stored preference. There is deliberately no timing storage, so a leave warning appears when there are unsaved changes and the footer repeats the session-only reminder.
 
 ## GitHub Pages deployment
 
@@ -107,7 +108,7 @@ The repository includes [`.github/workflows/deploy.yml`](.github/workflows/deplo
 - `src/lib/render.ts` — imperative Canvas 2D renderer for the rings and press cue.
 - `src/hooks/useHelper.ts` — run state, actions, keyboard handling, file I/O, and the single animation loop. The canvas redraws at display rate; the React HUD publishes at roughly 15 Hz.
 - `src/components/` — stage, run panel, calibration panel, timings panel, help dialog, and toast.
-- `src/styles.css` — the responsive visual system.
+- `src/styles.css` — the responsive visual system and its dark/light token themes.
 
 The logical stage is always 800×700 and is scaled by CSS; the canvas buffer is sized for the device pixel ratio.
 
