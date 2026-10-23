@@ -117,6 +117,9 @@ export default function App() {
           canvasRef={helper.canvasRef}
           status={helper.status}
           total={frame.total}
+          elapsed={frame.elapsed}
+          duration={frame.duration}
+          cue={frame.cue}
           dataError={helper.dataError}
           onStart={actions.toggleRun}
           onResetRun={actions.resetRun}

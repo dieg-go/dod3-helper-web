@@ -1,23 +1,37 @@
 import type { RefObject } from 'react';
 import type { RunStatus } from '../lib/run';
+import { MovementRibbon } from './MovementRibbon';
 
 interface StageProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   status: RunStatus;
   total: number;
+  elapsed: number;
+  duration: number;
+  cue: boolean;
   dataError: string | null;
   onStart: () => void;
   onResetRun: () => void;
 }
 
-export function Stage({ canvasRef, status, total, dataError, onStart, onResetRun }: StageProps) {
+export function Stage({
+  canvasRef,
+  status,
+  total,
+  elapsed,
+  duration,
+  cue,
+  dataError,
+  onStart,
+  onResetRun,
+}: StageProps) {
   const missingTimings = dataError !== null && total === 0;
   const showOverlay =
     status === 'idle' || status === 'finished' || total === 0 || missingTimings;
 
   return (
     <section className="stage-frame" aria-label="Timing stage">
-      <div className="stage">
+      <div className={`stage${cue ? ' is-cue' : ''}`}>
         <canvas ref={canvasRef} className="stage-canvas" aria-hidden="true" />
 
         {status === 'paused' ? <div className="stage-paused">Paused</div> : null}
@@ -58,11 +72,7 @@ export function Stage({ canvasRef, status, total, dataError, onStart, onResetRun
         ) : null}
       </div>
 
-      {/* <div className="stage-foot">
-        <span>Flight {(GEOMETRY.showMs / 1000).toFixed(2)} s</span>
-        <span>Window ±{Math.round(GEOMETRY.pressWindowMs)} ms</span>
-      </div> */}
+      <MovementRibbon elapsed={elapsed} duration={duration} total={total} />
     </section>
   );
 }
-

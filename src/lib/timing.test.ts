@@ -147,9 +147,10 @@ describe('visibleNotes', () => {
   });
 
   it('colours incoming rings by their song section', () => {
-    expect(visibleNotes([77_000], 75_000)[0]?.color).toEqual([184, 134, 11]);
-    expect(visibleNotes([80_000], 79_000)[0]?.color).toEqual([184, 134, 11]);
-    expect(visibleNotes([70_000], 69_000)[0]?.color).toEqual([216, 27, 96]);
+    expect(visibleNotes([69_000], 68_000)[0]?.color).toEqual([216, 27, 96]);
+    expect(visibleNotes([77_000], 75_000)[0]?.color).toEqual([230, 230, 46]);
+    expect(visibleNotes([80_000], 79_000)[0]?.color).toEqual([230, 230, 46]);
+    expect(visibleNotes([130_000], 129_000)[0]?.color).toEqual([46, 125, 50]);
   });
 });
 

@@ -53,8 +53,8 @@ export const TEMPO_SECTIONS = parseTempoSections(groupingText);
 
 export type GroupColor = readonly [number, number, number];
 
-/** One colour per tempo section: pink, yellow, green, purple, blue, grey, pink, pink. */
-const SECTION_COLORS: readonly GroupColor[] = Object.freeze([
+/** One colour per tempo section: pink, yellow, green, purple, blue, red, pink, pink. */
+export const SECTION_COLORS: readonly GroupColor[] = Object.freeze([
   [216, 27, 96],
   [230, 230, 46],
   [46, 125, 50],
@@ -64,6 +64,76 @@ const SECTION_COLORS: readonly GroupColor[] = Object.freeze([
   [216, 27, 96],
   [216, 27, 96],
 ]);
+
+const ROMAN = [
+  'I',
+  'II',
+  'III',
+  'IV',
+  'V',
+  'VI',
+  'VII',
+  'VIII',
+  'IX',
+  'X',
+  'XI',
+  'XII',
+] as const;
+
+/** Roman numeral for a zero-based section index, used as the movement label. */
+export function movementLabel(index: number): string {
+  if (!Number.isInteger(index) || index < 0) {
+    return '—';
+  }
+  return ROMAN[index] ?? String(index + 1);
+}
+
+/** Colour of a section index, falling back to the opening pink. */
+export function sectionColor(index: number | null): GroupColor {
+  if (index === null) {
+    return SECTION_COLORS[0]!;
+  }
+  return SECTION_COLORS[index] ?? SECTION_COLORS[0]!;
+}
+
+function mix(from: GroupColor, to: GroupColor, amount: number): GroupColor {
+  return [
+    Math.round(from[0] + (to[0] - from[0]) * amount),
+    Math.round(from[1] + (to[1] - from[1]) * amount),
+    Math.round(from[2] + (to[2] - from[2]) * amount),
+  ] as const;
+}
+
+/**
+ * The stage mood colour. Sections change the colour of the ambient light, and
+ * the first {@link blendMs} of a movement cross-fades from the previous one so
+ * the change reads as a lighting shift rather than a hard cut.
+ */
+export function moodColorAt(
+  timeMs: number,
+  sections: readonly TempoSection[] = TEMPO_SECTIONS,
+  blendMs = 1600,
+): GroupColor {
+  const index = tempoSectionIndexAt(timeMs, sections);
+  if (index === null) {
+    return SECTION_COLORS[0]!;
+  }
+
+  const current = sectionColor(index);
+  const section = sections[index];
+  if (!section || blendMs <= 0) {
+    return current;
+  }
+
+  const sinceStart = timeMs - section.startMs;
+  if (sinceStart < 0 || sinceStart >= blendMs) {
+    return current;
+  }
+
+  const amount = sinceStart / blendMs;
+  // Smoothstep keeps the handover soft at both ends.
+  return mix(sectionColor(index - 1), current, amount * amount * (3 - 2 * amount));
+}
 
 /**
  * Index of the tempo section a note belongs to. Notes that fall in a gap

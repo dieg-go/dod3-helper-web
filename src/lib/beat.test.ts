@@ -3,6 +3,8 @@ import {
   beatCount,
   beatOffset,
   findTempoSection,
+  moodColorAt,
+  movementLabel,
   parseTempoSections,
   sectionColorAt,
   tempoSectionIndexAt,
@@ -82,25 +84,59 @@ describe('beat phase', () => {
 describe('group colours', () => {
   it('uses the requested colour for each section', () => {
     expect(sectionColorAt(0)).toEqual([216, 27, 96]);
-    expect(sectionColorAt(80_000)).toEqual([184, 134, 11]);
-    expect(sectionColorAt(110_000)).toEqual([46, 125, 50]);
-    expect(sectionColorAt(160_000)).toEqual([123, 31, 162]);
-    expect(sectionColorAt(200_000)).toEqual([21, 101, 192]);
-    expect(sectionColorAt(250_000)).toEqual([96, 125, 139]);
+    expect(sectionColorAt(80_000)).toEqual([230, 230, 46]);
+    expect(sectionColorAt(130_000)).toEqual([46, 125, 50]);
+    expect(sectionColorAt(170_000)).toEqual([123, 31, 162]);
+    expect(sectionColorAt(210_000)).toEqual([21, 101, 192]);
+    expect(sectionColorAt(245_000)).toEqual([180, 25, 25]);
     expect(sectionColorAt(300_000)).toEqual([216, 27, 96]);
-    expect(sectionColorAt(350_000)).toEqual([216, 27, 96]);
+    expect(sectionColorAt(360_000)).toEqual([216, 27, 96]);
   });
 
   it('assigns notes near a boundary to the nearer section', () => {
     expect(tempoSectionIndexAt(75_842)).toBe(1);
     expect(tempoSectionIndexAt(142_442)).toBe(2);
     expect(tempoSectionIndexAt(223_523)).toBe(4);
-    expect(tempoSectionIndexAt(261_127)).toBe(5);
-    expect(tempoSectionIndexAt(338_405)).toBe(7);
+    expect(tempoSectionIndexAt(261_127)).toBe(6);
+    expect(tempoSectionIndexAt(338_405)).toBe(6);
   });
 
   it('clamps notes outside the map', () => {
     expect(tempoSectionIndexAt(-1)).toBe(0);
     expect(tempoSectionIndexAt(999_999)).toBe(7);
+  });
+});
+
+describe('movement labels', () => {
+  it('numbers sections with roman numerals', () => {
+    expect(movementLabel(0)).toBe('I');
+    expect(movementLabel(2)).toBe('III');
+    expect(movementLabel(7)).toBe('VIII');
+    expect(movementLabel(-1)).toBe('—');
+    expect(movementLabel(12)).toBe('13');
+  });
+});
+
+describe('mood colour', () => {
+  it('holds a section colour until the next movement begins', () => {
+    expect(moodColorAt(60_000)).toEqual([216, 27, 96]);
+    expect(moodColorAt(76_000)).toEqual([230, 230, 46]);
+    expect(moodColorAt(75_999)).toEqual([230, 230, 46]);
+  });
+
+  it('cross-fades across the opening of a movement', () => {
+    // Section 1 opens at 70 s; the handover starts from the previous pink.
+    expect(moodColorAt(70_000)).toEqual([216, 27, 96]);
+    expect(moodColorAt(71_600)).toEqual([230, 230, 46]);
+
+    const midway = moodColorAt(70_800);
+    expect(midway[0]).toBeGreaterThan(216);
+    expect(midway[0]).toBeLessThan(230);
+    expect(midway[2]).toBeLessThan(96);
+  });
+
+  it('leaves the opening movement unblended', () => {
+    expect(moodColorAt(0)).toEqual([216, 27, 96]);
+    expect(moodColorAt(800)).toEqual([216, 27, 96]);
   });
 });

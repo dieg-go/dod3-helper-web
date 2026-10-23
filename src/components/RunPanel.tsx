@@ -17,25 +17,46 @@ const PRIMARY_LABELS: Record<RunStatus, string> = {
   finished: 'Back to start',
 };
 
+const STATUS_LABELS: Record<RunStatus, string> = {
+  idle: 'Ready',
+  running: 'Running',
+  paused: 'Paused',
+  finished: 'Complete',
+};
+
+/** A note inside this many milliseconds is called out as imminent. */
+const SOON_MS = 600;
+
 export function RunPanel({ status, frame, canRun, onToggle, onResetRun }: RunPanelProps) {
   const nextLabel =
     status === 'running' || status === 'paused' ? formatNextIn(frame.nextDueMs) : '—';
   const progressMax = Math.max(frame.duration, 1);
   const progressValue = Math.min(frame.elapsed, frame.duration);
+  const soon =
+    !frame.cue && frame.nextDueMs !== null && frame.nextDueMs > 0 && frame.nextDueMs <= SOON_MS;
+  const clock = formatClock(frame.elapsed);
+  const dot = clock.lastIndexOf('.');
 
   return (
     <section className="panel panel-run" aria-labelledby="run-heading">
       <div className="panel-heading">
         <h2 id="run-heading">Run</h2>
-        {/* <span className={`mini-status mini-status-${status}`}>
+        <span className={`mini-status mini-status-${status}`}>
           <span className="dot" aria-hidden="true" />
-          {status === 'running' ? 'Clock running' : status === 'paused' ? 'Clock paused' : 'Clock stopped'}
-        </span> */}
+          {STATUS_LABELS[status]}
+        </span>
       </div>
 
       <p className="timer-label">Elapsed</p>
-      <p className="timer" aria-label={`Elapsed ${formatClock(frame.elapsed)}`}>
-        {formatClock(frame.elapsed)}
+      <p className="timer" aria-label={`Elapsed ${clock}`}>
+        {dot > 0 ? (
+          <>
+            <span className="timer-main">{clock.slice(0, dot)}</span>
+            <span className="timer-frac">{clock.slice(dot)}</span>
+          </>
+        ) : (
+          clock
+        )}
       </p>
 
       <div className="run-meta">
@@ -43,7 +64,9 @@ export function RunPanel({ status, frame, canRun, onToggle, onResetRun }: RunPan
           <span className="meta-label">Note</span>
           <strong>{formatNotePosition(frame.skip, frame.total)}</strong>
         </div>
-        <div className={`next-meta${frame.cue ? ' is-cue' : ''}`}>
+        <div
+          className={`next-meta${frame.cue ? ' is-cue' : ''}${soon ? ' is-soon' : ''}`}
+        >
           <span className="meta-label">Next note</span>
           <strong>{nextLabel}</strong>
         </div>
