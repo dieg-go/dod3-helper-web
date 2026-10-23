@@ -19,8 +19,25 @@ function loadMikhail(url: string): HTMLImageElement {
 const mikhailIdleImage = loadMikhail(MIKHAIL_URL);
 const mikhailPassImage = loadMikhail(MIKHAIL_PASS_URL);
 
-function colorToCss(color: readonly [number, number, number]): string {
-  return `rgb(${color[0]} ${color[1]} ${color[2]})`;
+type Rgb = readonly [number, number, number];
+
+const INK = '26, 19, 29';
+const ROSE: Rgb = [196, 101, 128];
+const JADE: Rgb = [47, 122, 91];
+
+function rgba(color: Rgb, alpha: number): string {
+  return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`;
+}
+
+function ink(alpha: number): string {
+  return `rgba(${INK}, ${alpha})`;
+}
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
 }
 
 function drawMikhail(
@@ -37,12 +54,8 @@ function drawMikhail(
     return;
   }
 
-  const reduceMotion =
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   const range = 2.2;
-  const bob = reduceMotion ? 0 : beatOffset(elapsedMs, range);
+  const bob = prefersReducedMotion() ? 0 : beatOffset(elapsedMs, range);
   const width = 80;
   const height = width;
 
@@ -62,8 +75,192 @@ function drawMikhail(
 }
 
 /**
- * Draw the original expanding-ring stage. The canvas is transparent so the
- * paper texture and flower watermark can live in CSS behind it.
+ * The target reads as a measuring instrument rather than a flat outline: a
+ * dashed outer rail, short cardinal ticks, and a jade aperture that lifts off
+ * the page with a soft halo.
+ */
+function drawReticle(context: CanvasRenderingContext2D, charge: number): void {
+  const { playerX, playerY, outerRadius, innerRadius } = GEOMETRY;
+
+  context.save();
+  context.lineCap = 'round';
+
+  // Outer rail.
+  context.lineWidth = 1;
+  context.setLineDash([2, 5]);
+  context.strokeStyle = ink(0.24);
+  context.beginPath();
+  context.arc(playerX, playerY, outerRadius, 0, Math.PI * 2);
+  context.stroke();
+  context.setLineDash([]);
+
+  // Cardinal ticks, plus a quieter diagonal scale.
+  for (let index = 0; index < 8; index += 1) {
+    const angle = (index / 8) * Math.PI * 2;
+    const major = index % 2 === 0;
+    const from = outerRadius + (major ? 3 : 4);
+    const to = outerRadius + (major ? 11 : 7);
+    context.strokeStyle = ink(major ? 0.34 : 0.16);
+    context.lineWidth = major ? 1.5 : 1;
+    context.beginPath();
+    context.moveTo(playerX + Math.cos(angle) * from, playerY + Math.sin(angle) * from);
+    context.lineTo(playerX + Math.cos(angle) * to, playerY + Math.sin(angle) * to);
+    context.stroke();
+  }
+
+  // Inner aperture halo, then the aperture itself.
+  context.strokeStyle = rgba(JADE, 0.12 + charge * 0.2);
+  context.lineWidth = 7;
+  context.beginPath();
+  context.arc(playerX, playerY, innerRadius, 0, Math.PI * 2);
+  context.stroke();
+
+  context.strokeStyle = rgba(JADE, 0.92);
+  context.lineWidth = 1.75;
+  context.beginPath();
+  context.arc(playerX, playerY, innerRadius, 0, Math.PI * 2);
+  context.stroke();
+
+  // Crosshair stubs between the aperture and the rail.
+  context.strokeStyle = ink(0.28);
+  context.lineWidth = 1;
+  context.beginPath();
+  context.moveTo(playerX - innerRadius - 4, playerY);
+  context.lineTo(playerX - outerRadius + 2, playerY);
+  context.moveTo(playerX + innerRadius + 4, playerY);
+  context.lineTo(playerX + outerRadius - 2, playerY);
+  context.moveTo(playerX, playerY + innerRadius + 4);
+  context.lineTo(playerX, playerY + outerRadius - 2);
+  context.stroke();
+
+  context.restore();
+}
+
+/** Faint flight path from the flower down to the target. */
+function drawFlightPath(context: CanvasRenderingContext2D, active: boolean): void {
+  const { playerX, noteY, playerY, outerRadius } = GEOMETRY;
+  const top = noteY;
+  const bottom = playerY - outerRadius - 16;
+
+  const gradient = context.createLinearGradient(0, top, 0, bottom);
+  gradient.addColorStop(0, ink(0));
+  gradient.addColorStop(0.25, ink(active ? 0.14 : 0.07));
+  gradient.addColorStop(1, ink(active ? 0.16 : 0.08));
+
+  context.save();
+  context.strokeStyle = gradient;
+  context.lineWidth = 1;
+  context.setLineDash([2, 7]);
+  context.beginPath();
+  context.moveTo(playerX, top);
+  context.lineTo(playerX, bottom);
+  context.stroke();
+  context.setLineDash([]);
+  context.restore();
+}
+
+/**
+ * A note ring is drawn as three concentric strokes so it reads as a glowing
+ * edge without paying for a blur filter on every frame.
+ */
+function drawNoteRing(
+  context: CanvasRenderingContext2D,
+  note: VisibleNote,
+  active: boolean,
+): void {
+  const { noteX, noteY, height } = GEOMETRY;
+  const color = note.color;
+
+  context.save();
+  context.lineCap = 'round';
+
+  context.strokeStyle = rgba(color, active ? 0.14 : 0.07);
+  context.lineWidth = 9;
+  context.beginPath();
+  context.arc(noteX, noteY, note.radius, 0, Math.PI * 2);
+  context.stroke();
+
+  context.strokeStyle = rgba(color, active ? 0.28 : 0.16);
+  context.lineWidth = 4;
+  context.beginPath();
+  context.arc(noteX, noteY, note.radius, 0, Math.PI * 2);
+  context.stroke();
+
+  context.strokeStyle = rgba(color, active ? 1 : 0.86);
+  context.lineWidth = active ? 2.5 : 1.75;
+  context.beginPath();
+  context.arc(noteX, noteY, note.radius, 0, Math.PI * 2);
+  context.stroke();
+
+  // Bright cap where the ring crosses the flight path, so its leading edge is
+  // easy to track against the dashed guide as it closes on the target.
+  const capY = noteY + note.radius;
+  if (capY < height + 12) {
+    context.fillStyle = rgba(color, active ? 0.95 : 0.6);
+    context.beginPath();
+    context.arc(noteX, capY, active ? 3 : 2, 0, Math.PI * 2);
+    context.fill();
+  }
+
+  context.restore();
+}
+
+/** Rose bloom behind Mikhail when a note lands inside the press window. */
+function drawPressAura(context: CanvasRenderingContext2D, charge: number): void {
+  const { playerX, playerY } = GEOMETRY;
+
+  const gradient = context.createRadialGradient(playerX, playerY, 4, playerX, playerY, 96);
+  gradient.addColorStop(0, rgba(ROSE, 0.2 + charge * 0.14));
+  gradient.addColorStop(0.55, rgba(ROSE, 0.07 + charge * 0.06));
+  gradient.addColorStop(1, rgba(ROSE, 0));
+
+  context.save();
+  context.fillStyle = gradient;
+  context.beginPath();
+  context.arc(playerX, playerY, 96, 0, Math.PI * 2);
+  context.fill();
+
+  // A charging ring that closes in on the aperture as the note comes due.
+  context.strokeStyle = rgba(ROSE, 0.16 + charge * 0.5);
+  context.lineWidth = 1.5;
+  context.beginPath();
+  context.arc(playerX, playerY, GEOMETRY.innerRadius + 34 * (1 - charge), 0, Math.PI * 2);
+  context.stroke();
+  context.restore();
+}
+
+function drawPressLabel(context: CanvasRenderingContext2D): void {
+  const { playerX, playerY } = GEOMETRY;
+  const text = 'Press';
+
+  context.save();
+  context.font =
+    '600 11px "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif';
+  context.letterSpacing = '0.14em';
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+
+  const width = context.measureText(text).width + 26;
+  const height = 25;
+  const x = playerX - width / 2;
+  const y = playerY + 64;
+
+  context.beginPath();
+  context.roundRect(x, y, width, height, height / 2);
+  context.fillStyle = 'rgba(251, 247, 250, 0.82)';
+  context.fill();
+  context.strokeStyle = rgba(ROSE, 0.45);
+  context.lineWidth = 1;
+  context.stroke();
+
+  context.fillStyle = '#7d2f45';
+  context.fillText(text, playerX, y + height / 2 + 0.5);
+  context.restore();
+}
+
+/**
+ * Draw the stage. The canvas stays transparent so the paper texture and the
+ * flower watermark can live in CSS behind it.
  */
 export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): void {
   if (!canvas) {
@@ -87,58 +284,32 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
   context.setTransform(dpr, 0, 0, dpr, 0, 0);
   context.clearRect(0, 0, GEOMETRY.width, GEOMETRY.height);
 
-  const { playerX, playerY, outerRadius, innerRadius } = GEOMETRY;
+  const running = frame.status !== 'idle';
+  const pressing = running ? frame.notes.find((note) => note.press) : undefined;
+  const charge = pressing
+    ? Math.min(1, Math.max(0, 1 - Math.abs(pressing.dueInMs) / GEOMETRY.pressWindowMs))
+    : 0;
 
-  context.save();
-  context.lineWidth = 1;
-  context.strokeStyle = '#00000033';
-  context.beginPath();
-  context.arc(playerX, playerY, outerRadius, 0, Math.PI * 2);
-  context.stroke();
+  drawFlightPath(context, running);
+  drawReticle(context, charge);
 
-  context.strokeStyle = '#008000';
-  context.beginPath();
-  context.arc(playerX, playerY, innerRadius, 0, Math.PI * 2);
-  context.stroke();
-
-  context.lineWidth = 2;
-  context.strokeStyle = '#00000033';
-  context.beginPath();
-  context.moveTo(playerX - outerRadius + 1, playerY);
-  context.lineTo(playerX - innerRadius, playerY);
-  context.moveTo(playerX + innerRadius, playerY);
-  context.lineTo(playerX + outerRadius, playerY);
-  context.moveTo(playerX, playerY + innerRadius);
-  context.lineTo(playerX, playerY + outerRadius);
-  context.stroke();
-  context.restore();
-
-  if (frame.status !== 'idle') {
+  if (running) {
     context.save();
-    context.lineWidth = 4;
     for (const note of frame.notes) {
-      context.strokeStyle = colorToCss(note.color);
-      context.beginPath();
-      context.arc(GEOMETRY.noteX, GEOMETRY.noteY, note.radius, 0, Math.PI * 2);
-      context.stroke();
+      drawNoteRing(context, note, note.press);
     }
     context.restore();
   }
 
-  const showPress =
-    frame.status !== 'idle' && frame.notes.some((note) => note.press);
+  if (pressing) {
+    drawPressAura(context, charge);
+  }
 
   // Draw the player above the note rings so Mikhail stays readable as a note
   // passes through the target.
-  drawMikhail(context, frame.elapsed, showPress);
+  drawMikhail(context, frame.elapsed, pressing !== undefined);
 
-  if (showPress) {
-    context.save();
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.fillStyle = '#8E3A52';
-    context.font = '600 29px "Bodoni MT", Didot, "Palatino Linotype", Georgia, serif';
-    context.fillText('Press', playerX, playerY + 80);
-    context.restore();
+  if (pressing) {
+    drawPressLabel(context);
   }
 }

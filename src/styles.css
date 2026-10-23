@@ -406,13 +406,16 @@ kbd {
   aspect-ratio: 800 / 700;
   overflow: hidden;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.75), transparent 36%),
-    linear-gradient(180deg, #fcf9fb 0%, #f7f0f5 100%);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 2px;
+    radial-gradient(72% 54% at 50% 86%, rgba(196, 101, 128, 0.1), transparent 74%),
+    radial-gradient(110% 80% at 50% -14%, rgba(255, 255, 255, 0.96), transparent 62%),
+    linear-gradient(168deg, #faf8fb 0%, #f4eef4 56%, #eee6ef 100%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
   box-shadow:
-    0 44px 90px -52px rgba(0, 0, 0, 0.95),
-    0 0 0 1px rgba(196, 101, 128, 0.08);
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -90px 100px -90px rgba(142, 58, 82, 0.16),
+    0 0 0 1px rgba(196, 101, 128, 0.14),
+    0 46px 90px -52px rgba(0, 0, 0, 0.92);
 }
 
 .stage::before {
@@ -423,9 +426,22 @@ kbd {
   background-repeat: no-repeat;
   background-position: center 42%;
   background-size: min(50%, 320px) auto;
-  opacity: 0.16;
+  opacity: 0.15;
   mix-blend-mode: multiply;
   filter: saturate(0.7);
+  content: "";
+  pointer-events: none;
+}
+
+.stage::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: radial-gradient(
+    122% 96% at 50% 46%,
+    transparent 58%,
+    rgba(26, 19, 29, 0.05) 100%
+  );
   content: "";
   pointer-events: none;
 }
@@ -450,16 +466,19 @@ kbd {
 }
 
 .stage-card {
-  width: min(100%, 350px);
-  padding: 26px 28px;
-  background: rgba(251, 247, 250, 0.9);
-  border: 1px solid rgba(26, 19, 29, 0.14);
-  border-radius: 2px;
-  box-shadow: 0 24px 54px -34px rgba(26, 19, 29, 0.6);
+  width: min(100%, 356px);
+  padding: 28px 30px;
+  background: rgba(251, 247, 250, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(26, 19, 29, 0.06),
+    0 30px 60px -38px rgba(26, 19, 29, 0.62);
   color: var(--paper-ink);
   text-align: center;
   pointer-events: auto;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(10px) saturate(1.1);
 }
 
 .stage-card h2 {
@@ -484,6 +503,26 @@ kbd {
 
 .stage-card .btn {
   width: 100%;
+  border-radius: 10px;
+}
+
+.stage-card .btn-primary {
+  background: linear-gradient(180deg, #241a26, #150e17);
+  border-color: rgba(26, 19, 29, 0.9);
+  color: var(--paper);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 10px 22px -14px rgba(26, 19, 29, 0.8);
+}
+
+.stage-card .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #33253a, #1d1420);
+}
+
+.stage-card .btn-primary kbd {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(251, 247, 250, 0.72);
 }
 
 .stage-card-hint {
@@ -497,23 +536,24 @@ kbd {
 .stage-paused {
   position: absolute;
   z-index: 3;
-  top: 14px;
-  right: 14px;
-  padding: 6px 10px;
-  background: rgba(26, 19, 29, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  top: 16px;
+  right: 16px;
+  padding: 6px 12px;
+  background: rgba(26, 19, 29, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
   color: var(--paper);
   font-family: var(--font-data);
-  font-size: 0.68rem;
-  letter-spacing: 0.03em;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  backdrop-filter: blur(8px);
 }
 
 .stage-foot {
   display: flex;
   justify-content: space-between;
   gap: 16px;
-  padding: 8px 2px 0;
+  padding: 10px 2px 0;
   color: var(--muted-2);
   font-family: var(--font-data);
   font-size: 0.66rem;
@@ -1101,6 +1141,22 @@ kbd {
 
   .layout {
     margin-top: 18px;
+  }
+
+  /* Portrait playfield: the stage is taller than it is wide, and the canvas is
+     cover-scaled to the stage height so the sides crop away like a zoom. */
+  .stage {
+    aspect-ratio: auto;
+    height: clamp(400px, 72vh, 620px);
+    height: clamp(400px, 72svh, 620px);
+  }
+
+  .stage-canvas {
+    right: auto;
+    left: 50%;
+    width: auto;
+    height: 100%;
+    transform: translateX(-50%);
   }
 
   .stage-overlay {
