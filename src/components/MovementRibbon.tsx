@@ -23,7 +23,7 @@ function rgb(color: readonly [number, number, number]): string {
  * the run sits in the eight-part song.
  */
 export function MovementRibbon({ elapsed, duration, total }: MovementRibbonProps) {
-  if (total === 0) {
+  if (total === 0 || TEMPO_SECTIONS.length === 0) {
     return null;
   }
 

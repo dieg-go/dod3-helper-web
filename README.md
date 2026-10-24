@@ -81,6 +81,19 @@ Importing an invalid file leaves the current sequence untouched and reports the 
 
 Edits are held in memory only; the theme choice is the sole stored preference. There is deliberately no timing storage, so a leave warning appears when there are unsaved changes and the footer repeats the session-only reminder.
 
+### Tempo map
+
+[`src/data/timings_grouping.txt`](src/data/timings_grouping.txt) drives the movement colours, the score map, and the beat pulse. One section per line:
+
+```
+0:00 - 1:10 // 120        # minutes:seconds
+70000 - 112500 // 133      # plain milliseconds
+118000ms - 2:32.250 // 144 # explicit unit, fractional seconds
+5:40 - 6:34 // 130 -> 0    # linear tempo change
+```
+
+A section's start is also the phase origin of the beat pulse, so use milliseconds when a movement has to land exactly on a beat. Seconds must stay below 60. If the file cannot be read the app still runs; the movements, their colours, and the pulse are simply disabled, and the reason is logged to the console.
+
 ## GitHub Pages deployment
 
 The repository includes [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml), which runs tests, builds, and deploys with the official Pages actions.

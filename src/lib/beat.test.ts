@@ -7,9 +7,11 @@ import {
   movementLabel,
   parseTempoSections,
   sectionColorAt,
+  TEMPO_SECTIONS,
   tempoSectionIndexAt,
   type TempoSection,
 } from './beat';
+import { formatClock } from './timing';
 
 const steady = (startMs: number, endMs: number, bpm: number): TempoSection => ({
   startMs,
@@ -44,6 +46,37 @@ describe('parseTempoSections', () => {
     ).toEqual([0, 60_000]);
 
     expect(() => parseTempoSections('0:00 - nope // 120')).toThrow(/line 1/);
+  });
+
+  it('accepts millisecond and fractional-second timecodes', () => {
+    const sections = parseTempoSections(
+      ['0 - 70000 // 120', '70000ms - 1:52.5 // 133', '1:52.500 - 2:32 // 144'].join('\n'),
+    );
+
+    expect(sections).toEqual([
+      { startMs: 0, endMs: 70_000, startBpm: 120, endBpm: 120 },
+      { startMs: 70_000, endMs: 112_500, startBpm: 133, endBpm: 133 },
+      { startMs: 112_500, endMs: 152_000, startBpm: 144, endBpm: 144 },
+    ]);
+  });
+
+  it('round-trips the timecodes the ribbon prints', () => {
+    expect(TEMPO_SECTIONS.length).toBeGreaterThan(0);
+
+    for (const section of TEMPO_SECTIONS) {
+      const line = `${formatClock(section.startMs)} - ${formatClock(section.endMs)} // ${section.startBpm}`;
+      expect(parseTempoSections(line)[0]).toMatchObject({
+        startMs: section.startMs,
+        endMs: section.endMs,
+      });
+    }
+  });
+
+  it('rejects out-of-range seconds and stray text', () => {
+    expect(() => parseTempoSections('0:75 - 1:30 // 120')).toThrow(/below 60/);
+    expect(() => parseTempoSections('0:00 - 1:00 // 120 extra')).toThrow(/line 1/);
+    expect(() => parseTempoSections('0:00 1:00 // 120')).toThrow(/line 1/);
+    expect(() => parseTempoSections('0:00 - 1:00 // 120')).not.toThrow();
   });
 });
 

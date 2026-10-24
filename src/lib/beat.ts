@@ -9,16 +9,45 @@ export interface TempoSection {
   readonly endBpm: number;
 }
 
-const LINE_PATTERN =
-  /^(\d+):\s*(\d{1,2})\s*-\s*(\d+):\s*(\d{1,2})\s*\/\/\s*(?:BPM:\s*)?(\d+(?:\.\d+)?)(?:\s*(?:->|to)\s*(\d+(?:\.\d+)?))?\s*$/i;
+const CLOCK = /^(\d+):\s*(\d{1,2}(?:\.\d+)?)$/;
+const MILLISECONDS = /^(\d+(?:\.\d+)?)(?:ms)?$/i;
+const TEMPO = /^(?:BPM:?\s*)?(\d+(?:\.\d+)?)(?:\s*(?:->|to)\s*(\d+(?:\.\d+)?))?$/i;
 
-function toMilliseconds(minutes: string, seconds: string): number {
-  return (Number(minutes) * 60 + Number(seconds)) * 1000;
+/**
+ * Parse one side of the range into milliseconds. Accepted forms:
+ *
+ *   `1:10`        minutes:seconds
+ *   `1:10.250`    minutes:seconds with a fractional part
+ *   `70250`       bare milliseconds
+ *   `70250ms`     milliseconds with an explicit unit
+ */
+function parseTimecode(token: string, lineNumber: number, rawLine: string): number {
+  const text = token.trim();
+
+  const clock = CLOCK.exec(text);
+  if (clock) {
+    const minutes = Number(clock[1]);
+    const seconds = Number(clock[2]);
+    if (seconds >= 60) {
+      throw new Error(`Seconds must be below 60 on line ${lineNumber}: ${rawLine}`);
+    }
+    return (minutes * 60 + seconds) * 1000;
+  }
+
+  const milliseconds = MILLISECONDS.exec(text);
+  if (milliseconds) {
+    return Number(milliseconds[1]);
+  }
+
+  throw new Error(`Invalid tempo timecode on line ${lineNumber}: ${rawLine}`);
 }
 
 /**
- * Parse the hand-written tempo map. Timecodes are m:ss and the BPM follows a
- * `//` comment marker; `120 -> 60` describes a linear tempo change.
+ * Parse the hand-written tempo map. Each line is `start - end // BPM`, the BPM
+ * follows a `//` comment marker, and `120 -> 60` describes a linear tempo
+ * change. Timecodes accept minutes:seconds, fractional seconds, or plain
+ * milliseconds — the map's start also sets the phase of the beat pulse, so
+ * sub-second precision keeps it aligned with the music.
  */
 export function parseTempoSections(text: string): TempoSection[] {
   const sections: TempoSection[] = [];
@@ -29,18 +58,30 @@ export function parseTempoSections(text: string): TempoSection[] {
       continue;
     }
 
-    const match = LINE_PATTERN.exec(line);
-    if (!match) {
-      throw new Error(`Invalid tempo section on line ${index + 1}: ${rawLine}`);
+    const lineNumber = index + 1;
+    const commentAt = line.indexOf('//');
+    if (commentAt === -1) {
+      throw new Error(`Invalid tempo section on line ${lineNumber}: ${rawLine}`);
     }
 
-    const startMs = toMilliseconds(match[1]!, match[2]!);
-    const endMs = toMilliseconds(match[3]!, match[4]!);
-    const startBpm = Number(match[5]);
-    const endBpm = match[6] === undefined ? startBpm : Number(match[6]);
+    const range = line.slice(0, commentAt).trim().split('-');
+    if (range.length !== 2) {
+      throw new Error(`Invalid tempo section on line ${lineNumber}: ${rawLine}`);
+    }
+
+    const startMs = parseTimecode(range[0]!, lineNumber, rawLine);
+    const endMs = parseTimecode(range[1]!, lineNumber, rawLine);
+
+    const tempo = TEMPO.exec(line.slice(commentAt + 2).trim());
+    if (!tempo) {
+      throw new Error(`Invalid tempo section on line ${lineNumber}: ${rawLine}`);
+    }
+
+    const startBpm = Number(tempo[1]);
+    const endBpm = tempo[2] === undefined ? startBpm : Number(tempo[2]);
 
     if (endMs <= startMs || startBpm <= 0 || endBpm < 0) {
-      throw new Error(`Invalid tempo range on line ${index + 1}: ${rawLine}`);
+      throw new Error(`Invalid tempo range on line ${lineNumber}: ${rawLine}`);
     }
 
     sections.push({ startMs, endMs, startBpm, endBpm });
@@ -49,7 +90,18 @@ export function parseTempoSections(text: string): TempoSection[] {
   return sections.sort((a, b) => a.startMs - b.startMs);
 }
 
-export const TEMPO_SECTIONS = parseTempoSections(groupingText);
+/**
+ * A typo in the hand-written map must not take the whole helper down: without
+ * movements the stage and the run still work, only the colour map goes away.
+ */
+export const TEMPO_SECTIONS: readonly TempoSection[] = (() => {
+  try {
+    return parseTempoSections(groupingText);
+  } catch (error) {
+    console.warn('The tempo map could not be read; movements are disabled.', error);
+    return [];
+  }
+})();
 
 export type GroupColor = readonly [number, number, number];
 

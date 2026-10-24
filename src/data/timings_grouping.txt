@@ -1,4 +1,7 @@
 # Song tempo sections, one per line: start - end // BPM
+# Timecodes accept 1:52, 1:52.250, or plain milliseconds (112250 / 112250ms).
+# The start of a section also sets the phase of the beat pulse, so use
+# milliseconds when a movement has to land exactly on a beat.
 # Use "BPM -> BPM" for a section that slows or speeds up linearly.
 0:00 - 1:10 // 120
 1:10 - 1:52 // 133
