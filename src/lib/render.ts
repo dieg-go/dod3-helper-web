@@ -154,6 +154,28 @@ function field(value: number, span: number): number {
 }
 
 /** Soft light pooling around the target, tinted by the current movement. */
+const bloomCache = new Map<string, CanvasGradient>();
+
+function bloomGradient(
+  context: CanvasRenderingContext2D,
+  color: GroupColor,
+  dark: boolean,
+): CanvasGradient {
+  const key = `${color.join('_')}_${dark ? 'dark' : 'light'}`;
+  const cached = bloomCache.get(key);
+  if (cached) {
+    return cached;
+  }
+
+  const { playerX, playerY } = GEOMETRY;
+  const gradient = context.createRadialGradient(playerX, playerY, 0, playerX, playerY, 265);
+  gradient.addColorStop(0, rgba(color, 1));
+  gradient.addColorStop(0.38, rgba(color, 0.44));
+  gradient.addColorStop(1, rgba(color, 0));
+  bloomCache.set(key, gradient);
+  return gradient;
+}
+
 function drawBloom(
   context: CanvasRenderingContext2D,
   color: GroupColor,
@@ -162,18 +184,13 @@ function drawBloom(
   dark: boolean,
 ): void {
   const { playerX, playerY } = GEOMETRY;
-  const radius = 250 + pulse * 30;
   const strength = (dark ? 0.2 : 0.09) * (0.72 + pulse * 0.36 + charge * 0.28);
 
-  const gradient = context.createRadialGradient(playerX, playerY, 0, playerX, playerY, radius);
-  gradient.addColorStop(0, rgba(color, strength));
-  gradient.addColorStop(0.38, rgba(color, strength * 0.44));
-  gradient.addColorStop(1, rgba(color, 0));
-
   context.save();
-  context.fillStyle = gradient;
+  context.globalAlpha = strength;
+  context.fillStyle = bloomGradient(context, color, dark);
   context.beginPath();
-  context.arc(playerX, playerY, radius, 0, Math.PI * 2);
+  context.arc(playerX, playerY, 265, 0, Math.PI * 2);
   context.fill();
   context.restore();
 }
@@ -466,6 +483,27 @@ function drawNoteRing(
 }
 
 /** Golden bloom behind Mikhail when a note lands inside the press window. */
+const pressAuraCache = new Map<boolean, CanvasGradient>();
+
+function pressAuraGradient(
+  context: CanvasRenderingContext2D,
+  dark: boolean,
+): CanvasGradient {
+  const cached = pressAuraCache.get(dark);
+  if (cached) {
+    return cached;
+  }
+
+  const { playerX, playerY } = GEOMETRY;
+  const gold = dark ? GOLD_LIGHT : GOLD;
+  const gradient = context.createRadialGradient(playerX, playerY, 4, playerX, playerY, 96);
+  gradient.addColorStop(0, rgba(gold, 1));
+  gradient.addColorStop(0.55, rgba(gold, 0.37));
+  gradient.addColorStop(1, rgba(gold, 0));
+  pressAuraCache.set(dark, gradient);
+  return gradient;
+}
+
 function drawPressAura(
   context: CanvasRenderingContext2D,
   charge: number,
@@ -474,18 +512,16 @@ function drawPressAura(
   const { playerX, playerY } = GEOMETRY;
   const gold = dark ? GOLD_LIGHT : GOLD;
 
-  const gradient = context.createRadialGradient(playerX, playerY, 4, playerX, playerY, 96);
-  gradient.addColorStop(0, rgba(gold, 0.2 + charge * 0.14));
-  gradient.addColorStop(0.55, rgba(gold, 0.07 + charge * 0.06));
-  gradient.addColorStop(1, rgba(gold, 0));
-
   context.save();
-  context.fillStyle = gradient;
+  context.globalAlpha = 0.2 + charge * 0.14;
+  context.fillStyle = pressAuraGradient(context, dark);
   context.beginPath();
   context.arc(playerX, playerY, 96, 0, Math.PI * 2);
   context.fill();
+  context.restore();
 
   // A charging ring that closes in on the aperture as the note comes due.
+  context.save();
   context.strokeStyle = rgba(gold, 0.16 + charge * 0.5);
   context.lineWidth = 1.5;
   context.beginPath();
@@ -523,6 +559,64 @@ function drawPressLabel(context: CanvasRenderingContext2D, dark: boolean): void 
   context.restore();
 }
 
+interface CanvasState {
+  width: number;
+  height: number;
+  signature: string;
+  lastAmbientDraw: number;
+}
+
+const canvasStates = new WeakMap<HTMLCanvasElement, CanvasState>();
+
+/** Track the canvas box so the backing store matches what is actually shown. */
+function stageState(canvas: HTMLCanvasElement): CanvasState {
+  const existing = canvasStates.get(canvas);
+  if (existing) {
+    return existing;
+  }
+
+  const rect = canvas.getBoundingClientRect();
+  const state: CanvasState = {
+    width: rect.width || GEOMETRY.width,
+    height: rect.height || GEOMETRY.height,
+    signature: '',
+    lastAmbientDraw: 0,
+  };
+  canvasStates.set(canvas, state);
+
+  if (typeof ResizeObserver !== 'undefined') {
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) {
+        return;
+      }
+      state.width = entry.contentRect.width;
+      state.height = entry.contentRect.height;
+      state.signature = '';
+    });
+    observer.observe(canvas);
+  }
+
+  return state;
+}
+
+function visualSignature(frame: StageFrame, state: CanvasState): string {
+  const layers = frame.layers ?? DEFAULT_STAGE_LAYERS;
+  const root = document.documentElement.dataset;
+  return [
+    frame.status,
+    root.theme ?? '',
+    root.effects ?? '',
+    Math.round(state.width),
+    Math.round(state.height),
+    layers.drawFlightPath ? 1 : 0,
+    layers.drawReticle ? 1 : 0,
+    layers.drawMikhail ? 1 : 0,
+    layers.drawPressLabel ? 1 : 0,
+    prefersReducedMotion() ? 1 : 0,
+  ].join('|');
+}
+
 /**
  * Draw the stage. The canvas stays transparent so the stage surface and the
  * paper glow can live in CSS behind it.
@@ -532,10 +626,24 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
     return;
   }
 
+  const state = stageState(canvas);
   const effects = effectsEnabled();
+  const idle = frame.status === 'idle';
+  const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+  const signature = visualSignature(frame, state);
+  const animateIdle = idle && effects && !prefersReducedMotion();
+
+  // Idle and finished frames only change when something visible changes. The
+  // drifting ambience is the exception, and 30 fps is plenty for petals.
+  if ((idle || frame.status === 'finished') && signature === state.signature) {
+    if (!animateIdle || now - state.lastAmbientDraw < 33) {
+      return;
+    }
+  }
+
   const dpr = effects ? Math.min(2, Math.max(1, window.devicePixelRatio || 1)) : 1;
-  const pixelWidth = Math.round(GEOMETRY.width * dpr);
-  const pixelHeight = Math.round(GEOMETRY.height * dpr);
+  const pixelWidth = Math.max(1, Math.round(state.width * dpr));
+  const pixelHeight = Math.max(1, Math.round(state.height * dpr));
 
   if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
     canvas.width = pixelWidth;
@@ -547,11 +655,17 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
     return;
   }
 
+  // Cover-scale the 800x700 scene inside the stage; tall phones crop the sides
+  // like the old CSS did, but only the visible pixels reach the backing store.
+  const scale = Math.max(pixelWidth / GEOMETRY.width, pixelHeight / GEOMETRY.height);
+  const offsetX = (pixelWidth - GEOMETRY.width * scale) / 2;
+  const offsetY = (pixelHeight - GEOMETRY.height * scale) / 2;
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, pixelWidth, pixelHeight);
+  context.setTransform(scale, 0, 0, scale, offsetX, offsetY);
+
   const dark = isDarkTheme();
   const layers = frame.layers ?? DEFAULT_STAGE_LAYERS;
-
-  context.setTransform(dpr, 0, 0, dpr, 0, 0);
-  context.clearRect(0, 0, GEOMETRY.width, GEOMETRY.height);
 
   const running = frame.status !== 'idle';
   const pressing = running ? frame.notes.find((note) => note.press) : undefined;
@@ -608,4 +722,7 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
   if (pressing && layers.drawPressLabel) {
     drawPressLabel(context, dark);
   }
+
+  state.signature = signature;
+  state.lastAmbientDraw = now;
 }

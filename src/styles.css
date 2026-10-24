@@ -1592,20 +1592,12 @@ summary.panel-heading:hover .panel-chevron {
     margin-top: 18px;
   }
 
-  /* Portrait playfield: the stage is taller than it is wide, and the canvas is
-     cover-scaled to the stage height so the sides crop away like a zoom. */
+  /* Portrait playfield: the stage is taller than it is wide. The canvas
+     cover-scales the 800x700 scene internally, so the sides crop like a zoom. */
   .stage {
     aspect-ratio: auto;
     height: clamp(400px, 72vh, 620px);
     height: clamp(400px, 72svh, 620px);
-  }
-
-  .stage-canvas {
-    right: auto;
-    left: 50%;
-    width: auto;
-    height: 100%;
-    transform: translateX(-50%);
   }
 
   .stage-overlay {

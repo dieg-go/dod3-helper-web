@@ -16,6 +16,7 @@ The app is fully static: no backend, no accounts, no telemetry. It is ready to d
 - Imports and exports the original one-value-per-line timing format.
 - Switches between dark and light themes; the choice is remembered between visits.
 - Has a visual-effects toggle for slower phones: it drops backdrop blur, the bloom/glow and press aura, and the animated canvas ambience.
+- Sizes the canvas to the displayed stage and stops redrawing static idle frames, instead of rendering the full 800×700 stage at device resolution.
 - Stays session-only for timings: edits are never written to browser storage; export before closing.
 
 ## Run locally
@@ -44,7 +45,14 @@ Then open `http://127.0.0.1:4173/`.
 pnpm test        # Vitest timing, clock, and shortcut tests
 pnpm typecheck   # strict TypeScript
 pnpm build       # typecheck + production build in dist/
+pnpm bench       # headless rendering benchmark (see below)
 ```
+
+## Performance benchmark
+
+`pnpm bench` builds the production app, loads it in headless Chrome/Edge at a 390×844 mobile viewport with a 4× CPU throttle, and reports the median of three runs for four scenarios: idle/running with visual effects on/off. It prints the canvas backing-store size, frames per second, time inside the app frame callback, and the main-thread breakdown (script, style, layout).
+
+The benchmark is a comparison tool, not a pass/fail gate: run it before and after a rendering change and compare the same machine's numbers. Set `BENCH_CHROME` to a Chromium path, `BENCH_THROTTLE`/`BENCH_SECONDS`/`BENCH_REPEATS` to tune it, or `BENCH_SHOTS=1` to save mobile screenshots in `.screenshots/bench-*.png`.
 
 ## Controls
 
@@ -123,11 +131,11 @@ The repository includes [`.github/workflows/deploy.yml`](.github/workflows/deplo
 - `src/lib/clock.ts` — elapsed-time clock anchored to `performance.now()`, so throttled/background tabs catch up correctly.
 - `src/lib/shortcuts.ts` — pure keyboard-to-action mapping with the source's Ctrl-over-Shift precedence.
 - `src/lib/render.ts` — imperative Canvas 2D renderer for the rings, press cue, and the stage atmosphere (petals, movement-tinted bloom, light cone, beat pulse).
-- `src/hooks/useHelper.ts` — run state, actions, keyboard handling, file I/O, and the single animation loop. The canvas redraws at display rate; the React HUD publishes at roughly 15 Hz.
+- `src/hooks/useHelper.ts` — run state, actions, keyboard handling, file I/O, and the single animation loop. The canvas redraws every frame while running; idle and finished frames only redraw when something visible changes, and the idle ambience runs at 30 Hz.
 - `src/components/` — stage, movement ribbon, run panel, calibration panel, timings panel, help dialog, and toast.
 - `src/styles.css` — the responsive visual system and its dark/light token themes.
 
-The logical stage is always 800×700 and is scaled by CSS; the canvas buffer is sized for the device pixel ratio.
+The logical stage is always 800×700 and is cover-scaled to the stage; the canvas backing store matches its displayed box (capped at 2× DPR, 1× when effects are off), so only visible pixels are rasterised.
 
 ### Fidelity notes
 
