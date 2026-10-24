@@ -595,7 +595,7 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
     context.restore();
   }
 
-  if (pressing) {
+  if (pressing && effects) {
     drawPressAura(context, charge, dark);
   }
 

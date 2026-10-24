@@ -15,7 +15,7 @@ The app is fully static: no backend, no accounts, no telemetry. It is ready to d
 - Supports removing upcoming notes with one-level undo.
 - Imports and exports the original one-value-per-line timing format.
 - Switches between dark and light themes; the choice is remembered between visits.
-- Has a visual-effects toggle for slower phones: it drops backdrop blur, the bloom/glow, and the animated canvas ambience.
+- Has a visual-effects toggle for slower phones: it drops backdrop blur, the bloom/glow and press aura, and the animated canvas ambience.
 - Stays session-only for timings: edits are never written to browser storage; export before closing.
 
 ## Run locally
