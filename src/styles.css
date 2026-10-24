@@ -63,6 +63,7 @@
   --stage-highlight: rgba(244, 235, 239, 0.06);
   --stage-ring: rgba(196, 101, 128, 0.18);
   --stage-card-bg: rgba(18, 13, 21, 0.82);
+  --stage-card-solid: var(--ink-900);
   --stage-card-border: rgba(244, 235, 239, 0.14);
   --stage-card-ink: var(--text);
   --stage-card-copy: var(--muted);
@@ -141,6 +142,7 @@
   --stage-highlight: rgba(255, 255, 255, 0.92);
   --stage-ring: rgba(196, 101, 128, 0.14);
   --stage-card-bg: rgba(251, 247, 250, 0.78);
+  --stage-card-solid: var(--paper);
   --stage-card-border: rgba(255, 255, 255, 0.7);
   --stage-card-ink: var(--paper-ink);
   --stage-card-copy: var(--paper-copy);
@@ -158,6 +160,28 @@
   --stage-card-kbd-border: rgba(255, 255, 255, 0.22);
   --stage-card-kbd-bg: rgba(255, 255, 255, 0.1);
   --stage-card-kbd-ink: rgba(251, 247, 250, 0.72);
+}
+
+/* Effects off: no backdrop blur, no bloom glow, no animated canvas
+   atmosphere. Colours and layout stay the same; only the costly parts go. */
+:root[data-effects="off"] .stage-card {
+  background: var(--stage-card-solid);
+  box-shadow: 0 0 0 1px var(--stage-card-border);
+  backdrop-filter: none;
+}
+
+:root[data-effects="off"] .stage-paused {
+  background: var(--ink-800);
+  backdrop-filter: none;
+}
+
+:root[data-effects="off"] .stage.is-cue {
+  box-shadow: 0 0 0 2px var(--rose-line-soft);
+}
+
+:root[data-effects="off"] .help-dialog::backdrop {
+  background: rgba(9, 6, 11, 0.86);
+  backdrop-filter: none;
 }
 
 *,
@@ -386,6 +410,11 @@ p {
 
 .theme-toggle:active {
   transform: translateY(1px);
+}
+
+.theme-toggle[aria-pressed="false"] {
+  border-color: var(--line-soft);
+  color: var(--muted-2);
 }
 
 .theme-toggle svg {

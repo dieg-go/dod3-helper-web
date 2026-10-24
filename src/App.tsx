@@ -12,10 +12,16 @@ import { useHelper } from './hooks/useHelper';
 type Theme = 'light' | 'dark';
 
 const THEME_KEY = 'dod3-theme';
+const EFFECTS_KEY = 'dod3-effects';
 
 /** The head script resolves the saved or system theme before first paint. */
 function readTheme(): Theme {
   return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+}
+
+/** The head script also applies the saved effects choice before first paint. */
+function readEffects(): boolean {
+  return document.documentElement.dataset.effects !== 'off';
 }
 
 export default function App() {
@@ -23,6 +29,7 @@ export default function App() {
   const { actions, frame } = helper;
   const canRun = frame.total > 0;
   const [theme, setTheme] = useState<Theme>(readTheme);
+  const [effects, setEffects] = useState(readEffects);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -31,11 +38,25 @@ export default function App() {
       ?.setAttribute('content', theme === 'light' ? '#f5eff2' : '#120d15');
   }, [theme]);
 
+  useEffect(() => {
+    document.documentElement.dataset.effects = effects ? 'on' : 'off';
+  }, [effects]);
+
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
     try {
       localStorage.setItem(THEME_KEY, next);
+    } catch {
+      // Storage can be unavailable; the choice still applies for this visit.
+    }
+  };
+
+  const toggleEffects = () => {
+    const next = !effects;
+    setEffects(next);
+    try {
+      localStorage.setItem(EFFECTS_KEY, next ? 'on' : 'off');
     } catch {
       // Storage can be unavailable; the choice still applies for this visit.
     }
@@ -80,6 +101,25 @@ export default function App() {
         </div>
 
         <div className="masthead-actions">
+          <button
+            className="theme-toggle"
+            type="button"
+            onClick={toggleEffects}
+            aria-pressed={effects}
+            aria-label={`Visual effects ${effects ? 'on' : 'off'}`}
+            title={
+              effects
+                ? 'Turn visual effects off for better performance'
+                : 'Turn visual effects on'
+            }
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3.2l1.6 4.3 4.3 1.6-4.3 1.6L12 15l-1.6-4.3-4.3-1.6 4.3-1.6L12 3.2Z" />
+              <path d="M18.4 14.6l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" />
+              {effects ? null : <path d="M4.5 19.5l15-15" />}
+            </svg>
+          </button>
+
           <button
             className="theme-toggle"
             type="button"

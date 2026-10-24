@@ -15,6 +15,7 @@ The app is fully static: no backend, no accounts, no telemetry. It is ready to d
 - Supports removing upcoming notes with one-level undo.
 - Imports and exports the original one-value-per-line timing format.
 - Switches between dark and light themes; the choice is remembered between visits.
+- Has a visual-effects toggle for slower phones: it drops backdrop blur, the bloom/glow, and the animated canvas ambience.
 - Stays session-only for timings: edits are never written to browser storage; export before closing.
 
 ## Run locally
@@ -79,7 +80,7 @@ The file format is one millisecond value per line. Import also accepts:
 
 Importing an invalid file leaves the current sequence untouched and reports the offending line. Export downloads `timings.txt` in the original format.
 
-Edits are held in memory only; the theme choice is the sole stored preference. There is deliberately no timing storage, so a leave warning appears when there are unsaved changes and the footer repeats the session-only reminder.
+Edits are held in memory only; the theme and visual-effects choices are the only stored preferences. There is deliberately no timing storage, so a leave warning appears when there are unsaved changes and the footer repeats the session-only reminder.
 
 ### Tempo map
 

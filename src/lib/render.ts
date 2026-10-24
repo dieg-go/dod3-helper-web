@@ -69,6 +69,12 @@ function isDarkTheme(): boolean {
   return document.documentElement.dataset.theme !== 'light';
 }
 
+/** Effects off is the low-power mode for phones: the ambience is skipped and
+ * the canvas renders at 1× instead of the device pixel ratio. */
+function effectsEnabled(): boolean {
+  return document.documentElement.dataset.effects !== 'off';
+}
+
 const reducedMotionQuery =
   typeof window !== 'undefined' && typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -526,7 +532,8 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
     return;
   }
 
-  const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+  const effects = effectsEnabled();
+  const dpr = effects ? Math.min(2, Math.max(1, window.devicePixelRatio || 1)) : 1;
   const pixelWidth = Math.round(GEOMETRY.width * dpr);
   const pixelHeight = Math.round(GEOMETRY.height * dpr);
 
@@ -554,7 +561,7 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
 
   // The stage breathes with the song: a beat-locked pulse while running, and a
   // slower idle breath when the clock is stopped.
-  const ambience = advanceAmbient(frame.status === 'paused');
+  const ambience = effects ? advanceAmbient(frame.status === 'paused') : 0;
   const section = findTempoSection(frame.elapsed);
   const reduced = prefersReducedMotion();
 
@@ -569,7 +576,9 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
     pulse = 0.42 + 0.3 * Math.sin(ambience / 2400);
   }
 
-  drawAtmosphere(context, ambience, moodColorAt(frame.elapsed), pulse, charge, dark);
+  if (effects) {
+    drawAtmosphere(context, ambience, moodColorAt(frame.elapsed), pulse, charge, dark);
+  }
 
   if (layers.drawFlightPath) {
     drawFlightPath(context, running, dark);
