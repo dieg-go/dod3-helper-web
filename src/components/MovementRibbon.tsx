@@ -19,6 +19,30 @@ function rgb(color: readonly [number, number, number]): string {
 }
 
 /**
+ * Who holds the stage in each movement, in tempo-map order: Zero opens alone, a
+ * sister joins her every movement, everyone is on stage in VII, and Zero closes
+ * alone in VIII.
+ */
+const MOVEMENT_NAMES = [
+  'Zero',
+  'Five',
+  'Four',
+  'Three',
+  'Two',
+  'One',
+  'Everyone',
+  'Zero',
+] as const;
+
+/** A movement's cast name; past the end of the list its numeral stands in. */
+function movementName(index: number | null): string {
+  if (index === null) {
+    return '—';
+  }
+  return MOVEMENT_NAMES[index] ?? movementLabel(index);
+}
+
+/**
  * The score map: one segment per tempo movement, scaled by duration, with the
  * live playhead. It doubles as a scrubber, so the eight-part song can be
  * rewound or fast-forwarded without waiting through it.
@@ -45,7 +69,7 @@ export function MovementRibbon({ elapsed, duration, total, onSeek }: MovementRib
   const valueText =
     activeIndex === null
       ? formatClock(elapsed)
-      : `${formatClock(elapsed)}, movement ${activeIndex + 1} of ${TEMPO_SECTIONS.length}`;
+      : `${formatClock(elapsed)}, ${movementName(activeIndex)}`;
 
   return (
     <figure className="movement" style={{ '--seg': rgb(color) } as CSSProperties}>
@@ -69,7 +93,7 @@ export function MovementRibbon({ elapsed, duration, total, onSeek }: MovementRib
                 } as CSSProperties
               }
             >
-              <span className="movement-num">{movementLabel(index)}</span>
+              <span className="movement-num">{movementName(index)}</span>
             </span>
           );
         })}
@@ -94,7 +118,7 @@ export function MovementRibbon({ elapsed, duration, total, onSeek }: MovementRib
       <figcaption className="movement-meta">
         <span className="movement-now">
           <span className="movement-dot" aria-hidden="true" />
-          <span>{active ? `Movement ${movementLabel(activeIndex ?? 0)}` : 'Movement —'}</span>
+          <span>{movementName(activeIndex)}</span>
           {bpm ? <span className="movement-bpm">{bpm}</span> : null}
         </span>
         <span className="movement-range">
