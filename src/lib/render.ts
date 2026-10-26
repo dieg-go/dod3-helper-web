@@ -497,6 +497,33 @@ function drawFlightPath(
 }
 
 /**
+ * The bright bead where each ring crosses the flight path. It rides the guide
+ * as the ring grows, so its leading edge is easy to track down to the target.
+ */
+function drawPathDots(
+  context: CanvasRenderingContext2D,
+  notes: readonly VisibleNote[],
+  dark: boolean,
+): void {
+  const { noteX, noteY, height } = GEOMETRY;
+
+  context.save();
+  for (const note of notes) {
+    const capY = noteY + note.radius;
+    if (capY >= height + 12) {
+      continue;
+    }
+
+    const color = dark ? lighten(note.color, 0.35) : note.color;
+    context.fillStyle = rgba(color, note.press ? 0.95 : 0.6);
+    context.beginPath();
+    context.arc(noteX, capY, note.press ? 3 : 2, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.restore();
+}
+
+/**
  * A note ring is drawn as three concentric strokes so it reads as a glowing
  * edge without paying for a blur filter on every frame.
  */
@@ -506,7 +533,7 @@ function drawNoteRing(
   active: boolean,
   dark: boolean,
 ): void {
-  const { noteX, noteY, height } = GEOMETRY;
+  const { noteX, noteY } = GEOMETRY;
   const color = dark ? lighten(note.color, 0.35) : note.color;
 
   context.save();
@@ -529,16 +556,6 @@ function drawNoteRing(
   context.beginPath();
   context.arc(noteX, noteY, note.radius, 0, Math.PI * 2);
   context.stroke();
-
-  // Bright cap where the ring crosses the flight path, so its leading edge is
-  // easy to track against the dashed guide as it closes on the target.
-  const capY = noteY + note.radius;
-  if (capY < height + 12) {
-    context.fillStyle = rgba(color, active ? 0.95 : 0.6);
-    context.beginPath();
-    context.arc(noteX, capY, active ? 3 : 2, 0, Math.PI * 2);
-    context.fill();
-  }
 
   context.restore();
 }
@@ -820,6 +837,11 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
       drawNoteRing(context, note, note.press, dark);
     }
     context.restore();
+
+    // The beads belong to the guide, so they sit on top of the ring strokes.
+    if (layers.drawFlightPath) {
+      drawPathDots(context, frame.notes, dark);
+    }
 
     // Rings are born at the origin, in the middle of the cast.
     drawCast(context, frame.elapsed);
