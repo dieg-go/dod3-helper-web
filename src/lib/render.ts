@@ -320,69 +320,6 @@ function drawBloom(
   context.restore();
 }
 
-/**
- * A soft cone of light from the flower down to the target. The blurred wedge is
- * rendered once per palette and reused: a canvas blur every frame would cost
- * more than the rest of the stage put together.
- */
-const beamCache = new Map<string, HTMLCanvasElement | null>();
-
-function beamSprite(color: GroupColor, dark: boolean): HTMLCanvasElement | null {
-  if (typeof document === 'undefined') {
-    return null;
-  }
-
-  const key = `${color.join('_')}_${dark ? 'dark' : 'light'}`;
-  const cached = beamCache.get(key);
-  if (cached !== undefined) {
-    return cached;
-  }
-
-  const sprite = document.createElement('canvas');
-  sprite.width = GEOMETRY.width;
-  sprite.height = GEOMETRY.height;
-  const context = sprite.getContext('2d');
-  if (!context) {
-    beamCache.set(key, null);
-    return null;
-  }
-
-  const { noteX, noteY, playerX, playerY } = GEOMETRY;
-  const top = noteY + 26;
-  const bottom = playerY + 14;
-
-  const gradient = context.createLinearGradient(0, top, 0, bottom);
-  gradient.addColorStop(0, rgba(color, 0));
-  gradient.addColorStop(0.42, rgba(color, dark ? 0.12 : 0.06));
-  gradient.addColorStop(1, rgba(color, 0));
-
-  if (typeof context.filter === 'string') {
-    context.filter = 'blur(22px)';
-  }
-  context.fillStyle = gradient;
-  context.beginPath();
-  context.moveTo(noteX - 24, top);
-  context.lineTo(noteX + 24, top);
-  context.lineTo(playerX + 104, bottom);
-  context.lineTo(playerX - 104, bottom);
-  context.closePath();
-  context.fill();
-
-  beamCache.set(key, sprite);
-  return sprite;
-}
-
-function drawBeam(
-  context: CanvasRenderingContext2D,
-  color: GroupColor,
-  dark: boolean,
-): void {
-  const sprite = beamSprite(color, dark);
-  if (sprite) {
-    context.drawImage(sprite, 0, 0);
-  }
-}
-
 function petalPath(context: CanvasRenderingContext2D, size: number): void {
   context.beginPath();
   context.moveTo(0, -size);
@@ -432,7 +369,6 @@ function drawAtmosphere(
   // Lift the palette off the dark surface; keep it true on paper.
   const color = dark ? lighten(mood, 0.45) : mood;
   drawBloom(context, color, pulse, charge, dark);
-  // drawBeam(context, color, dark);
   drawPetals(context, ambience, color, dark);
 }
 
