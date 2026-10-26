@@ -92,12 +92,9 @@ export default function App() {
 
       <header className="masthead">
         <div className="brand">
-          {/* <span className="brand-flower" aria-hidden="true">
-            <img src={FLOWER_URL} alt="" />
-          </span> */}
           <div className="brand-copy">
-            <h1>Destroy the Flower</h1>
-            <p>A timing helper for the final boss of Drakengard 3.</p>
+            <h1>DOD3 Helper</h1>
+            <p>A visual guide for the final boss of Drakengard 3.</p>
           </div>
         </div>
 

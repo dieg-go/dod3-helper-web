@@ -30,8 +30,8 @@ const SOON_MS = 600;
 export function RunPanel({ status, frame, canRun, onToggle, onResetRun }: RunPanelProps) {
   const nextLabel =
     status === 'running' || status === 'paused' ? formatNextIn(frame.nextDueMs) : '—';
-  const progressMax = Math.max(frame.duration, 1);
-  const progressValue = Math.min(frame.elapsed, frame.duration);
+  // const progressMax = Math.max(frame.duration, 1);
+  // const progressValue = Math.min(frame.elapsed, frame.duration);
   const soon =
     !frame.cue && frame.nextDueMs !== null && frame.nextDueMs > 0 && frame.nextDueMs <= SOON_MS;
   const clock = formatClock(frame.elapsed);
@@ -72,13 +72,13 @@ export function RunPanel({ status, frame, canRun, onToggle, onResetRun }: RunPan
         </div>
       </div>
 
-      <progress
+      {/* <progress
         className="run-progress"
         max={progressMax}
         value={progressValue}
         aria-label="Time through the sequence"
         aria-valuetext={`${formatClock(frame.elapsed)} of ${formatClock(frame.duration)}`}
-      />
+      /> */}
 
       <div className="transport">
         <button

@@ -1633,37 +1633,41 @@ summary.panel-heading:hover .panel-chevron {
     display: none;
   }
 
+  /* One row: the title block and the toggles share the header, so the stage
+     keeps the screen instead of giving up a second row to two buttons. */
   .masthead {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-    padding-bottom: 14px;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
   }
 
   .masthead-actions {
-    justify-content: flex-end;
-    width: 100%;
+    width: auto;
+    gap: 8px;
   }
 
   .brand {
-    gap: 12px;
+    gap: 10px;
   }
 
   .brand-flower {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
   }
 
   .brand-flower img {
-    width: 39px;
+    width: 36px;
   }
 
   .brand-copy h1 {
-    font-size: 1.8rem;
+    font-size: 1.45rem;
   }
 
   .brand-copy p {
-    font-size: 0.8rem;
+    margin-top: 2px;
+    font-size: 0.72rem;
+    line-height: 1.3;
   }
 
   .layout {
