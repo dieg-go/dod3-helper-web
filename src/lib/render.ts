@@ -210,7 +210,7 @@ function prefersReducedMotion(): boolean {
 /* ---------------------------------------------------------------- atmosphere */
 
 /**
- * Drifting petals, the section-tinted bloom behind the target, and the light
+ * Drifting petals, the section-tinted bloom behind the cast, and the light
  * cone falling from the flower. These live in the canvas so the stage keeps a
  * sense of place on an otherwise flat surface.
  */
@@ -275,8 +275,11 @@ function field(value: number, span: number): number {
   return ((value % span) + span) % span;
 }
 
-/** Soft light pooling around the target, tinted by the current movement. */
+/** Soft light pooling behind the cast, tinted by the current movement. */
 const bloomCache = new Map<string, CanvasGradient>();
+
+/** Reaches well past the ring, so the light pools around the cast rather than clipping them. */
+const BLOOM_RADIUS = 265;
 
 function bloomGradient(
   context: CanvasRenderingContext2D,
@@ -289,8 +292,8 @@ function bloomGradient(
     return cached;
   }
 
-  const { playerX, playerY } = GEOMETRY;
-  const gradient = context.createRadialGradient(playerX, playerY, 0, playerX, playerY, 265);
+  const { noteX, noteY } = GEOMETRY;
+  const gradient = context.createRadialGradient(noteX, noteY, 0, noteX, noteY, BLOOM_RADIUS);
   gradient.addColorStop(0, rgba(color, 1));
   gradient.addColorStop(0.38, rgba(color, 0.44));
   gradient.addColorStop(1, rgba(color, 0));
@@ -305,14 +308,14 @@ function drawBloom(
   charge: number,
   dark: boolean,
 ): void {
-  const { playerX, playerY } = GEOMETRY;
+  const { noteX, noteY } = GEOMETRY;
   const strength = (dark ? 0.2 : 0.09) * (0.72 + pulse * 0.36 + charge * 0.28);
 
   context.save();
   context.globalAlpha = strength;
   context.fillStyle = bloomGradient(context, color, dark);
   context.beginPath();
-  context.arc(playerX, playerY, 265, 0, Math.PI * 2);
+  context.arc(noteX, noteY, BLOOM_RADIUS, 0, Math.PI * 2);
   context.fill();
   context.restore();
 }
@@ -429,7 +432,7 @@ function drawAtmosphere(
   // Lift the palette off the dark surface; keep it true on paper.
   const color = dark ? lighten(mood, 0.45) : mood;
   drawBloom(context, color, pulse, charge, dark);
-  drawBeam(context, color, dark);
+  // drawBeam(context, color, dark);
   drawPetals(context, ambience, color, dark);
 }
 
