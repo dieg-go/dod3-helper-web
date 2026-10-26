@@ -181,7 +181,7 @@ export default function App() {
           <TimingsPanel
             count={frame.total}
             duration={frame.duration}
-            dirty={helper.dirty}
+            custom={helper.custom}
             confirmReset={helper.confirmReset}
             canReset={DEFAULT_TIMINGS_ERROR === null}
             dataError={helper.dataError}
@@ -202,7 +202,7 @@ export default function App() {
           </a>{' '}
           by UnknownAr, Apache 2.0. Drakengard 3 is a trademark of Square Enix.
         </p>
-        <p className="footer-note">Session only — export your timings before closing.</p>
+        <p className="footer-note">Timings are saved in this browser — export for a copy.</p>
       </footer>
 
       {helper.toast ? <Toast toast={helper.toast} onDismiss={actions.dismissToast} /> : null}

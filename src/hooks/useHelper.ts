@@ -4,6 +4,7 @@ import { Clock } from '../lib/clock';
 import { DEFAULT_STAGE_LAYERS, drawStage, type StageLayers } from '../lib/render';
 import type { RunStatus } from '../lib/run';
 import { resolveShortcut, type ShortcutAction } from '../lib/shortcuts';
+import { clearSavedTimings, loadSavedTimings, saveTimings } from '../lib/storage';
 import {
   formatClock,
   nudgeAt,
@@ -69,7 +70,8 @@ export interface UseHelperResult {
   timings: number[];
   status: RunStatus;
   frame: HelperFrame;
-  dirty: boolean;
+  /** The sequence differs from the built-in one. */
+  custom: boolean;
   dataError: string | null;
   helpOpen: boolean;
   confirmReset: boolean;
@@ -114,6 +116,14 @@ function emptyFrame(timings: readonly number[]): HelperFrame {
   };
 }
 
+/** True when the sequence is exactly the one shipped with the helper. */
+function matchesDefault(timings: readonly number[]): boolean {
+  return (
+    timings.length === DEFAULT_TIMINGS.length &&
+    timings.every((value, index) => value === DEFAULT_TIMINGS[index])
+  );
+}
+
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -131,7 +141,11 @@ function isEditableTarget(target: EventTarget | null): boolean {
 export function useHelper(): UseHelperResult {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const clockRef = useRef(new Clock());
-  const timingsRef = useRef<number[]>(DEFAULT_TIMINGS.slice());
+  // Open with whatever this browser saved, so calibration survives a reload.
+  const [timings, setTimings] = useState<number[]>(
+    () => loadSavedTimings() ?? DEFAULT_TIMINGS.slice(),
+  );
+  const timingsRef = useRef<number[]>(timings);
   const statusRef = useRef<RunStatus>('idle');
   const skipRef = useRef(0);
   const holdsRef = useRef<Holds>(IDLE_HOLDS);
@@ -145,10 +159,8 @@ export function useHelper(): UseHelperResult {
   const performActionRef = useRef<(action: ShortcutAction) => void>(() => {});
   const finishRunRef = useRef<(now: number) => void>(() => {});
 
-  const [timings, setTimings] = useState<number[]>(() => DEFAULT_TIMINGS.slice());
   const [status, setStatus] = useState<RunStatus>('idle');
-  const [frame, setFrame] = useState<HelperFrame>(() => emptyFrame(DEFAULT_TIMINGS));
-  const [dirty, setDirty] = useState(false);
+  const [frame, setFrame] = useState<HelperFrame>(() => emptyFrame(timings));
   const [dataError, setDataError] = useState<string | null>(DEFAULT_TIMINGS_ERROR);
   const [helpOpen, setHelpOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -156,6 +168,8 @@ export function useHelper(): UseHelperResult {
   const [holds, setHolds] = useState<Holds>(IDLE_HOLDS);
   const [layers, setLayers] = useState<StageLayers>(DEFAULT_STAGE_LAYERS);
   const [announcement, setAnnouncement] = useState<Announcement>({ id: 0, text: '' });
+
+  const custom = !matchesDefault(timings);
 
   const announce = useCallback((text: string) => {
     setAnnouncement((previous) => ({ id: previous.id + 1, text }));
@@ -338,13 +352,11 @@ export function useHelper(): UseHelperResult {
   }, [pauseRun, resetRun, resumeRun, startRun]);
 
   const commitTimings = useCallback(
-    (next: number[], markDirty = true) => {
+    (next: number[]) => {
       const now = performance.now();
       timingsRef.current = next;
       setTimings(next);
-      if (markDirty) {
-        setDirty(true);
-      }
+      saveTimings(next);
 
       if (next.length === 0) {
         clockRef.current.reset();
@@ -447,7 +459,7 @@ export function useHelper(): UseHelperResult {
     undoRef.current = null;
     timingsRef.current = snapshot.timings.slice();
     setTimings(snapshot.timings.slice());
-    setDirty(true);
+    saveTimings(snapshot.timings);
     publishFrame(performance.now(), true);
     announce('Removed note restored.');
     showToast('Removed note restored.', { duration: 3000 });
@@ -491,14 +503,19 @@ export function useHelper(): UseHelperResult {
   }, []);
 
   const loadSequence = useCallback(
-    (next: number[], markDirty: boolean) => {
+    (next: number[], keep: boolean) => {
       const now = performance.now();
       clockRef.current.reset();
       clearHolds();
       timingsRef.current = next;
       setTimings(next);
+      // An imported sequence is worth keeping; the built-in one is already on disk.
+      if (keep) {
+        saveTimings(next);
+      } else {
+        clearSavedTimings();
+      }
       commitStatus('idle');
-      setDirty(markDirty);
       undoRef.current = null;
       setToast(null);
       if (toastTimerRef.current !== null) {
@@ -553,7 +570,6 @@ export function useHelper(): UseHelperResult {
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
-      setDirty(false);
       announce(`Exported ${current.length} notes.`);
       showToast(`Exported ${current.length} notes.`, { duration: 4000 });
     } catch (error) {
@@ -759,20 +775,8 @@ export function useHelper(): UseHelperResult {
   }, [publishFrame]);
 
   useEffect(() => {
-    if (!dirty) {
-      return;
-    }
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = '';
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [dirty]);
-
-  useEffect(() => {
-    document.title = `${dirty ? '• ' : ''}Destroy the Flower — Drakengard 3 helper`;
-  }, [dirty]);
+    document.title = 'Destroy the Flower — Drakengard 3 helper';
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -829,7 +833,7 @@ export function useHelper(): UseHelperResult {
     timings,
     status,
     frame,
-    dirty,
+    custom,
     dataError,
     helpOpen,
     confirmReset,

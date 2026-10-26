@@ -4,7 +4,7 @@ import { formatClock } from '../lib/timing';
 interface TimingsPanelProps {
   count: number;
   duration: number;
-  dirty: boolean;
+  custom: boolean;
   confirmReset: boolean;
   canReset: boolean;
   dataError: string | null;
@@ -16,7 +16,7 @@ interface TimingsPanelProps {
 export function TimingsPanel({
   count,
   duration,
-  dirty,
+  custom,
   confirmReset,
   canReset,
   dataError,
@@ -43,13 +43,13 @@ export function TimingsPanel({
           Timings
           <span className="panel-chevron" aria-hidden="true" />
         </h2>
-        {dirty ? (
+        {custom ? (
           <span className="dirty-pill">
             <span className="dot" aria-hidden="true" />
-            Unsaved changes
+            Edited
           </span>
         ) : (
-          <span className="panel-aside">Session only</span>
+          <span className="panel-aside">Built-in sequence</span>
         )}
       </summary>
 
@@ -107,8 +107,8 @@ export function TimingsPanel({
       />
 
       <p className="panel-note">
-        One millisecond value per line; commas and comments are accepted. Changes last only for
-        this session, so export before closing the tab.
+        One millisecond value per line; commas and comments are accepted. Edits are saved in this
+        browser, so they are still here next time.
       </p>
     </details>
   );

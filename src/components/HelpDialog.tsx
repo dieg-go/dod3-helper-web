@@ -111,8 +111,8 @@ export function HelpDialog({ open, onClose }: HelpDialogProps) {
         </div>
 
         <p className="help-note">
-          Timing edits last only for this session. Export the current sequence before closing the
-          tab. The file format is one millisecond value per line.
+          Timing edits are saved in this browser, so they are still here next time. Export whenever
+          you want a copy to keep. The file format is one millisecond value per line.
         </p>
       </div>
     </dialog>
