@@ -14,6 +14,7 @@ import {
   findTempoSection,
   moodColorAt,
   TEMPO_SECTIONS,
+  tempoSectionIndexAt,
   type GroupColor,
 } from './beat';
 import { GEOMETRY, type VisibleNote } from './timing';
@@ -53,27 +54,33 @@ function loadImage(url: string): HTMLImageElement {
 const mikhailIdleImage = loadImage(MIKHAIL_URL);
 const mikhailPassImage = loadImage(MIKHAIL_PASS_URL);
 
-/** Zero holds the ring origin in every movement while her sisters gather round. */
-const zeroImage = loadImage(ZERO_URL);
-
-/** How long a sister takes to fade in, and the whole ring to clear in the finale. */
+/** How long the cast takes to drift into a movement's formation. */
 const SPRITE_FADE_MS = 700;
 
-/** The finale movement, where every sister but Zero leaves. */
+/** Zero's place in the middle, and the ring her sisters make around her. */
+const CENTER_SIZE = 84;
+const ORBIT_SIZE = 56;
+const ORBIT_RADIUS = 76;
+
+/** Movement VII: Zero takes the middle back, her sisters only ring her. */
+const RECLAIM_MOVEMENT = 6;
+
+/** The finale, where the sisters leave Zero alone in the middle. */
 const FINALE_MOVEMENT = 7;
 
-/** The sisters are smaller than Zero and clear of the stage's top edge. */
-const ORBIT_RADIUS = 76;
-const ORBIT_SIZE = 56;
-
-interface Sister {
+interface Intoner {
   readonly image: HTMLImageElement;
-  /** Tempo movement (zero-based) whose start brings her in. */
+  /** Tempo movement (zero-based) that brings her in, straight into the middle. */
   readonly from: number;
 }
 
-/** The ring fills one sister per movement: Five joins first, One joins last. */
-const SISTERS: readonly Sister[] = [
+/**
+ * The Intoners arrive one per movement and the newest one takes the middle, so
+ * each movement reads as a formation: I Zero, II Five and Zero, III Four around
+ * Five and Zero, and so on down to One. From VII Zero holds the middle again.
+ */
+const INTONERS: readonly Intoner[] = [
+  { image: loadImage(ZERO_URL), from: 0 },
   { image: loadImage(FIVE_URL), from: 1 },
   { image: loadImage(FOUR_URL), from: 2 },
   { image: loadImage(THREE_URL), from: 3 },
@@ -85,20 +92,79 @@ function isReady(image: HTMLImageElement): boolean {
   return image.complete && image.naturalWidth > 0;
 }
 
-/** Smoothstep ramp from 0 to 1 across {@link SPRITE_FADE_MS} after `startMs`. */
+function lerp(from: number, to: number, amount: number): number {
+  return from + (to - from) * amount;
+}
+
+/** Linear 0..1 progress across {@link SPRITE_FADE_MS} after `startMs`. */
+function progressAt(elapsedMs: number, startMs: number): number {
+  return Math.min(1, Math.max(0, (elapsedMs - startMs) / SPRITE_FADE_MS));
+}
+
+/** Smoothstep, for the fades. */
 function ramp(elapsedMs: number, startMs: number): number {
-  const amount = Math.min(1, Math.max(0, (elapsedMs - startMs) / SPRITE_FADE_MS));
+  const amount = progressAt(elapsedMs, startMs);
   return amount * amount * (3 - 2 * amount);
 }
 
-/** A sister fades in with her movement and the whole ring clears in the finale. */
-function sisterAlpha(sister: Sister, elapsedMs: number): number {
-  const join = TEMPO_SECTIONS[sister.from]?.startMs;
-  const finale = TEMPO_SECTIONS[FINALE_MOVEMENT]?.startMs;
+/** Ease-out, so whoever leaves the middle clears it as the newcomer arrives. */
+function glide(elapsedMs: number, startMs: number): number {
+  const inverse = 1 - progressAt(elapsedMs, startMs);
+  return 1 - inverse * inverse * inverse;
+}
 
-  const arrives = join === undefined ? 1 : ramp(elapsedMs, join);
-  const leaves = finale === undefined ? 0 : ramp(elapsedMs, finale);
-  return arrives * (1 - leaves);
+/** Movement shown at a given time; ahead of the tempo map it is the opening one. */
+function movementAt(elapsedMs: number): number {
+  return tempoSectionIndexAt(elapsedMs) ?? 0;
+}
+
+/** A sister only exists once the tempo map names her movement. */
+function joinAlpha(intoner: Intoner, elapsedMs: number): number {
+  const section = TEMPO_SECTIONS[intoner.from];
+  return section === undefined ? 0 : ramp(elapsedMs, section.startMs);
+}
+
+/** Where one Intoner stands: on the note origin, or on her slot of the ring. */
+interface Spot {
+  readonly x: number;
+  readonly y: number;
+  readonly size: number;
+}
+
+const CENTER_SPOT: Spot = { x: GEOMETRY.noteX, y: GEOMETRY.noteY, size: CENTER_SIZE };
+
+function ringSpot(slot: number, count: number, spin: number): Spot {
+  const angle = spin + (slot / count) * Math.PI * 2 - Math.PI / 2;
+  return {
+    x: GEOMETRY.noteX + Math.cos(angle) * ORBIT_RADIUS,
+    y: GEOMETRY.noteY + Math.sin(angle) * ORBIT_RADIUS,
+    size: ORBIT_SIZE,
+  };
+}
+
+/** The newest arrival holds the middle; from VII Zero takes it back. */
+function centerAt(movement: number): number {
+  if (movement >= RECLAIM_MOVEMENT) {
+    return 0;
+  }
+
+  return INTONERS.reduce(
+    (newest, intoner, index) => (intoner.from <= movement ? index : newest),
+    0,
+  );
+}
+
+/** The whole cast in one movement: one in the middle, the rest evenly spaced. */
+function formation(movement: number, spin: number): readonly Spot[] {
+  const center = centerAt(movement);
+  const orbit = INTONERS.map((_, index) => index).filter(
+    (index) => index !== center && INTONERS[index]!.from <= movement,
+  );
+
+  return INTONERS.map((_, index) => {
+    const slot = orbit.indexOf(index);
+    return slot === -1 ? CENTER_SPOT : ringSpot(slot, orbit.length, spin);
+  });
 }
 
 type Rgb = readonly [number, number, number];
@@ -547,49 +613,55 @@ function drawNoteRing(
 }
 
 /**
- * The cast at the ring origin: Zero in the middle, her sisters circling her.
- * Each sister joins on her own movement's fade and the finale clears the ring.
- * The orbit holds still for reduced-motion users.
+ * The cast at the ring origin. The newest Intoner stands in the middle and the
+ * ones before her ring her, turning slowly; a movement change eases the whole
+ * formation into its next shape. VII hands the middle back to Zero and the
+ * finale clears her sisters away. Reduced motion holds the ring still.
  */
 function drawCast(context: CanvasRenderingContext2D, elapsedMs: number): void {
-  const step = (Math.PI * 2) / SISTERS.length;
-  const spin = prefersReducedMotion() ? 0 : elapsedMs * 0.0005;
+  const movement = movementAt(elapsedMs);
+  const previous = Math.max(0, movement - 1);
+  const settle = glide(elapsedMs, TEMPO_SECTIONS[movement]?.startMs ?? 0);
+  const finaleStart = TEMPO_SECTIONS[FINALE_MOVEMENT]?.startMs ?? Number.POSITIVE_INFINITY;
+  const finale = ramp(elapsedMs, finaleStart);
+  // A negative rate turns the ring anticlockwise.
+  const spin = prefersReducedMotion() ? 0 : -elapsedMs * 0.0005;
+
+  const before = formation(previous, spin);
+  const after = formation(movement, spin);
+
+  const cast = INTONERS.map((intoner, index) => {
+    const from = before[index]!;
+    const to = after[index]!;
+    const spot: Spot = {
+      x: lerp(from.x, to.x, settle),
+      y: lerp(from.y, to.y, settle),
+      size: lerp(from.size, to.size, settle),
+    };
+
+    // Zero never leaves; her sisters fade in on arrival and out in the finale.
+    const alpha = index === 0 ? 1 : joinAlpha(intoner, elapsedMs) * (1 - finale);
+    return { image: intoner.image, alpha, spot };
+  });
+
+  // Back to front, so whoever holds the middle covers the ring.
+  cast.sort((a, b) => a.spot.size - b.spot.size);
 
   context.save();
-  for (const [slot, sister] of SISTERS.entries()) {
-    const alpha = sisterAlpha(sister, elapsedMs);
-    if (alpha <= 0 || !isReady(sister.image)) {
+  for (const { image, alpha, spot } of cast) {
+    if (alpha <= 0.01 || !isReady(image)) {
       continue;
     }
-
-    const angle = spin + slot * step - Math.PI / 2;
-    const x = GEOMETRY.noteX + Math.cos(angle) * ORBIT_RADIUS;
-    const y = GEOMETRY.noteY + Math.sin(angle) * ORBIT_RADIUS;
-
-    context.globalAlpha = alpha;
-    context.drawImage(sister.image, x - ORBIT_SIZE / 2, y - ORBIT_SIZE / 2, ORBIT_SIZE, ORBIT_SIZE);
+    context.globalAlpha = Math.min(1, alpha);
+    context.drawImage(
+      image,
+      spot.x - spot.size / 2,
+      spot.y - spot.size / 2,
+      spot.size,
+      spot.size,
+    );
   }
   context.restore();
-
-  // Zero is drawn last so the ring passes behind her, and she never fades.
-  if (isReady(zeroImage)) {
-    drawCenterSprite(context, zeroImage);
-  }
-}
-
-/** The character at the ring origin, so every note appears to be born from it. */
-function drawCenterSprite(
-  context: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-): void {
-  const size = 84;
-  context.drawImage(
-    image,
-    GEOMETRY.noteX - size / 2,
-    GEOMETRY.noteY - size / 2,
-    size,
-    size,
-  );
 }
 
 /** Golden bloom behind Mikhail when a note lands inside the press window. */
@@ -818,7 +890,7 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
     }
     context.restore();
 
-    // Rings are born at the origin, where Zero waits for her sisters.
+    // Rings are born at the origin, in the middle of the cast.
     drawCast(context, frame.elapsed);
   }
 
