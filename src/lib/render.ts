@@ -1,5 +1,21 @@
-import { MIKHAIL_PASS_URL, MIKHAIL_URL } from './assets';
-import { beatCount, beatOffset, findTempoSection, moodColorAt, type GroupColor } from './beat';
+import {
+  FIVE_URL,
+  FOUR_URL,
+  MIKHAIL_PASS_URL,
+  MIKHAIL_URL,
+  ONE_URL,
+  THREE_URL,
+  TWO_URL,
+  ZERO_URL,
+} from './assets';
+import {
+  beatCount,
+  beatOffset,
+  findTempoSection,
+  moodColorAt,
+  TEMPO_SECTIONS,
+  type GroupColor,
+} from './beat';
 import { GEOMETRY, type VisibleNote } from './timing';
 import type { RunStatus } from './run';
 
@@ -27,15 +43,63 @@ export interface StageFrame {
   layers?: StageLayers;
 }
 
-function loadMikhail(url: string): HTMLImageElement {
+function loadImage(url: string): HTMLImageElement {
   const image = new Image();
   image.decoding = 'async';
   image.src = url;
   return image;
 }
 
-const mikhailIdleImage = loadMikhail(MIKHAIL_URL);
-const mikhailPassImage = loadMikhail(MIKHAIL_PASS_URL);
+const mikhailIdleImage = loadImage(MIKHAIL_URL);
+const mikhailPassImage = loadImage(MIKHAIL_PASS_URL);
+
+/** Zero holds the ring origin in every movement while her sisters gather round. */
+const zeroImage = loadImage(ZERO_URL);
+
+/** How long a sister takes to fade in, and the whole ring to clear in the finale. */
+const SPRITE_FADE_MS = 700;
+
+/** The finale movement, where every sister but Zero leaves. */
+const FINALE_MOVEMENT = 7;
+
+/** The sisters are smaller than Zero and clear of the stage's top edge. */
+const ORBIT_RADIUS = 76;
+const ORBIT_SIZE = 56;
+
+interface Sister {
+  readonly image: HTMLImageElement;
+  /** Tempo movement (zero-based) whose start brings her in. */
+  readonly from: number;
+}
+
+/** The ring fills one sister per movement: Five joins first, One joins last. */
+const SISTERS: readonly Sister[] = [
+  { image: loadImage(FIVE_URL), from: 1 },
+  { image: loadImage(FOUR_URL), from: 2 },
+  { image: loadImage(THREE_URL), from: 3 },
+  { image: loadImage(TWO_URL), from: 4 },
+  { image: loadImage(ONE_URL), from: 5 },
+];
+
+function isReady(image: HTMLImageElement): boolean {
+  return image.complete && image.naturalWidth > 0;
+}
+
+/** Smoothstep ramp from 0 to 1 across {@link SPRITE_FADE_MS} after `startMs`. */
+function ramp(elapsedMs: number, startMs: number): number {
+  const amount = Math.min(1, Math.max(0, (elapsedMs - startMs) / SPRITE_FADE_MS));
+  return amount * amount * (3 - 2 * amount);
+}
+
+/** A sister fades in with her movement and the whole ring clears in the finale. */
+function sisterAlpha(sister: Sister, elapsedMs: number): number {
+  const join = TEMPO_SECTIONS[sister.from]?.startMs;
+  const finale = TEMPO_SECTIONS[FINALE_MOVEMENT]?.startMs;
+
+  const arrives = join === undefined ? 1 : ramp(elapsedMs, join);
+  const leaves = finale === undefined ? 0 : ramp(elapsedMs, finale);
+  return arrives * (1 - leaves);
+}
 
 type Rgb = readonly [number, number, number];
 
@@ -482,6 +546,52 @@ function drawNoteRing(
   context.restore();
 }
 
+/**
+ * The cast at the ring origin: Zero in the middle, her sisters circling her.
+ * Each sister joins on her own movement's fade and the finale clears the ring.
+ * The orbit holds still for reduced-motion users.
+ */
+function drawCast(context: CanvasRenderingContext2D, elapsedMs: number): void {
+  const step = (Math.PI * 2) / SISTERS.length;
+  const spin = prefersReducedMotion() ? 0 : elapsedMs * 0.0005;
+
+  context.save();
+  for (const [slot, sister] of SISTERS.entries()) {
+    const alpha = sisterAlpha(sister, elapsedMs);
+    if (alpha <= 0 || !isReady(sister.image)) {
+      continue;
+    }
+
+    const angle = spin + slot * step - Math.PI / 2;
+    const x = GEOMETRY.noteX + Math.cos(angle) * ORBIT_RADIUS;
+    const y = GEOMETRY.noteY + Math.sin(angle) * ORBIT_RADIUS;
+
+    context.globalAlpha = alpha;
+    context.drawImage(sister.image, x - ORBIT_SIZE / 2, y - ORBIT_SIZE / 2, ORBIT_SIZE, ORBIT_SIZE);
+  }
+  context.restore();
+
+  // Zero is drawn last so the ring passes behind her, and she never fades.
+  if (isReady(zeroImage)) {
+    drawCenterSprite(context, zeroImage);
+  }
+}
+
+/** The character at the ring origin, so every note appears to be born from it. */
+function drawCenterSprite(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+): void {
+  const size = 84;
+  context.drawImage(
+    image,
+    GEOMETRY.noteX - size / 2,
+    GEOMETRY.noteY - size / 2,
+    size,
+    size,
+  );
+}
+
 /** Golden bloom behind Mikhail when a note lands inside the press window. */
 const pressAuraCache = new Map<boolean, CanvasGradient>();
 
@@ -707,6 +817,9 @@ export function drawStage(canvas: HTMLCanvasElement | null, frame: StageFrame): 
       drawNoteRing(context, note, note.press, dark);
     }
     context.restore();
+
+    // Rings are born at the origin, where Zero waits for her sisters.
+    drawCast(context, frame.elapsed);
   }
 
   if (pressing && effects) {
