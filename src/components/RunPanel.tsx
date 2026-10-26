@@ -1,6 +1,6 @@
-import type { HelperFrame } from '../hooks/useHelper';
-import type { RunStatus } from '../lib/run';
-import { formatClock, formatNextIn, formatNotePosition } from '../lib/timing';
+import type { HelperFrame } from "../hooks/useHelper";
+import type { RunStatus } from "../lib/run";
+import { formatClock, formatNextIn, formatNotePosition } from "../lib/timing";
 
 interface RunPanelProps {
   status: RunStatus;
@@ -11,29 +11,36 @@ interface RunPanelProps {
 }
 
 const PRIMARY_LABELS: Record<RunStatus, string> = {
-  idle: 'Start',
-  running: 'Pause',
-  paused: 'Resume',
-  finished: 'Back to start',
+  idle: "Start",
+  running: "Pause",
+  paused: "Resume",
+  finished: "Back to start",
 };
 
 /** A note inside this many milliseconds is called out as imminent. */
 const SOON_MS = 600;
 
-export function RunPanel({ status, frame, canRun, onToggle, onResetRun }: RunPanelProps) {
+export function RunPanel({
+  status,
+  frame,
+  canRun,
+  onToggle,
+  onResetRun,
+}: RunPanelProps) {
   const nextLabel =
-    status === 'running' || status === 'paused' ? formatNextIn(frame.nextDueMs) : '—';
+    status === "running" || status === "paused"
+      ? formatNextIn(frame.nextDueMs)
+      : "—";
   const soon =
-    !frame.cue && frame.nextDueMs !== null && frame.nextDueMs > 0 && frame.nextDueMs <= SOON_MS;
+    !frame.cue &&
+    frame.nextDueMs !== null &&
+    frame.nextDueMs > 0 &&
+    frame.nextDueMs <= SOON_MS;
   const clock = formatClock(frame.elapsed);
-  const dot = clock.lastIndexOf('.');
+  const dot = clock.lastIndexOf(".");
 
   return (
-    <section className="panel panel-run" aria-labelledby="run-heading">
-      <div className="panel-heading">
-        <h2 id="run-heading">Run</h2>
-      </div>
-
+    <section className="panel panel-run">
       <div className="readout">
         <p className="timer" aria-label={`Elapsed ${clock}`}>
           {dot > 0 ? (
@@ -46,18 +53,16 @@ export function RunPanel({ status, frame, canRun, onToggle, onResetRun }: RunPan
           )}
         </p>
 
-        <div className="readout-facts">
-          <p className="readout-fact">
-            <span className="meta-label">Note</span>
-            <strong>{formatNotePosition(frame.skip, frame.total)}</strong>
-          </p>
-          <p
-            className={`readout-fact next-meta${frame.cue ? ' is-cue' : ''}${soon ? ' is-soon' : ''}`}
-          >
-            <span className="meta-label">Next</span>
-            <strong>{nextLabel}</strong>
-          </p>
-        </div>
+        <p className="readout-fact">
+          <span className="meta-label">Note</span>
+          <strong>{formatNotePosition(frame.skip, frame.total)}</strong>
+        </p>
+        <p
+          className={`readout-fact next-meta${frame.cue ? " is-cue" : ""}${soon ? " is-soon" : ""}`}
+        >
+          <span className="meta-label">Next</span>
+          <strong>{nextLabel}</strong>
+        </p>
       </div>
 
       {/* <progress
@@ -77,7 +82,11 @@ export function RunPanel({ status, frame, canRun, onToggle, onResetRun }: RunPan
         >
           {PRIMARY_LABELS[status]} <kbd aria-hidden="true">Space</kbd>
         </button>
-        <button className="btn btn-secondary" type="button" onClick={onResetRun}>
+        <button
+          className="btn btn-secondary"
+          type="button"
+          onClick={onResetRun}
+        >
           Reset run <kbd aria-hidden="true">R</kbd>
         </button>
       </div>

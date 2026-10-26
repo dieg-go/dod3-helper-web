@@ -952,8 +952,18 @@ kbd {
 
 /* Run panel */
 
+/* The clock is sized against the panel, not the viewport: the readout is a
+   third of it, and that third is narrow in the rail but wide when the panel
+   spans the page at tablet widths. */
+.panel-run {
+  container-type: inline-size;
+}
+
 .readout {
   display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: baseline;
+  justify-items: start;
   gap: 9px;
   margin-bottom: 12px;
   padding: 11px 13px 9px;
@@ -969,7 +979,7 @@ kbd {
 .timer {
   color: var(--text);
   font-family: var(--font-data);
-  font-size: clamp(1.85rem, 2.6vw, 2.3rem);
+  font-size: clamp(1.5rem, 7.5cqw, 2.1rem);
   font-variant-numeric: tabular-nums;
   font-weight: 400;
   letter-spacing: -0.055em;
@@ -983,19 +993,11 @@ kbd {
   letter-spacing: -0.01em;
 }
 
-.readout-facts {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--line-soft);
-}
-
 .readout-fact {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  white-space: nowrap;
 }
 
 .meta-label {
@@ -1527,7 +1529,7 @@ summary.panel-heading:hover .panel-chevron {
 
   .layout {
     grid-template-columns: 1fr;
-    gap: 26px;
+    gap: 16px 26px;
   }
 
   .stage-frame {
@@ -1681,8 +1683,12 @@ summary.panel-heading:hover .panel-chevron {
     font-size: 0.6rem;
   }
 
-  .timer {
-    font-size: 2rem;
+  .readout {
+    gap: 6px;
+  }
+
+  .readout-fact strong {
+    font-size: 0.84rem;
   }
 
   .btn-step {
@@ -1723,6 +1729,18 @@ summary.panel-heading:hover .panel-chevron {
 
   .key-row {
     gap: 10px;
+  }
+}
+
+/* Below ~350px a third of the card cannot hold the next-note chip, so the
+   clock takes its own row and the facts split the one below. */
+@media (max-width: 349px) {
+  .readout {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .timer {
+    grid-column: 1 / -1;
   }
 }
 
