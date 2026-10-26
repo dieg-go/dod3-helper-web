@@ -12,6 +12,7 @@ import {
   beatCount,
   beatOffset,
   findTempoSection,
+  lighten,
   moodColorAt,
   TEMPO_SECTIONS,
   tempoSectionIndexAt,
@@ -183,15 +184,6 @@ function rgba(color: Rgb, alpha: number): string {
 
 function ink(alpha: number, dark: boolean): string {
   return `rgba(${dark ? INK_LIGHT : INK_DARK}, ${alpha * (dark ? 1.4 : 1)})`;
-}
-
-/** Lift a note colour toward white so it reads against the dark stage. */
-function lighten(color: Rgb, amount: number): Rgb {
-  return [
-    Math.round(color[0] + (255 - color[0]) * amount),
-    Math.round(color[1] + (255 - color[1]) * amount),
-    Math.round(color[2] + (255 - color[2]) * amount),
-  ] as const;
 }
 
 /** The head script and the theme toggle keep this attribute in sync. */

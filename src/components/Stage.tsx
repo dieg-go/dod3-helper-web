@@ -1,4 +1,5 @@
-import type { RefObject } from 'react';
+import type { CSSProperties, RefObject } from 'react';
+import { lighten, sectionColorAt } from '../lib/beat';
 import type { RunStatus } from '../lib/run';
 import { MovementRibbon } from './MovementRibbon';
 
@@ -9,6 +10,7 @@ interface StageProps {
   elapsed: number;
   duration: number;
   cue: boolean;
+  dark: boolean;
   dataError: string | null;
   onStart: () => void;
   onResetRun: () => void;
@@ -22,6 +24,7 @@ export function Stage({
   elapsed,
   duration,
   cue,
+  dark,
   dataError,
   onStart,
   onResetRun,
@@ -31,9 +34,16 @@ export function Stage({
   const showOverlay =
     status === 'idle' || status === 'finished' || total === 0 || missingTimings;
 
+  // The frame glows in the colour of the ring closing on the target, lifted the
+  // same way the canvas lifts the ring itself.
+  const cueColor = lighten(sectionColorAt(elapsed), dark ? 0.35 : 0).join(' ');
+
   return (
     <section className="stage-frame" aria-label="Timing stage">
-      <div className={`stage${cue ? ' is-cue' : ''}`}>
+      <div
+        className={`stage${cue ? ' is-cue' : ''}`}
+        style={{ '--cue': cueColor } as CSSProperties}
+      >
         <canvas ref={canvasRef} className="stage-canvas" aria-hidden="true" />
 
         {status === 'paused' ? <div className="stage-paused">Paused</div> : null}

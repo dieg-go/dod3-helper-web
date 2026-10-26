@@ -156,6 +156,15 @@ function mix(from: GroupColor, to: GroupColor, amount: number): GroupColor {
   ] as const;
 }
 
+/** Lift a colour toward white so it reads against the dark stage. */
+export function lighten(color: GroupColor, amount: number): GroupColor {
+  return [
+    Math.round(color[0] + (255 - color[0]) * amount),
+    Math.round(color[1] + (255 - color[1]) * amount),
+    Math.round(color[2] + (255 - color[2]) * amount),
+  ] as const;
+}
+
 /**
  * The stage mood colour. Sections change the colour of the ambient light, and
  * the first {@link blendMs} of a movement cross-fades from the previous one so

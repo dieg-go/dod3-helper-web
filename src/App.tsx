@@ -158,6 +158,7 @@ export default function App() {
           elapsed={frame.elapsed}
           duration={frame.duration}
           cue={frame.cue}
+          dark={theme === 'dark'}
           dataError={helper.dataError}
           onStart={actions.toggleRun}
           onResetRun={actions.resetRun}
