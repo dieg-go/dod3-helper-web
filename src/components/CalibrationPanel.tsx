@@ -6,12 +6,14 @@ interface CalibrationPanelProps {
   skip: number;
   total: number;
   holds: Holds;
+  helpOpen: boolean;
   onNudgeLast: (delta: number) => void;
   onNudgeNext: (delta: number) => void;
   onShiftAll: (delta: number) => void;
   onNudgeClock: (delta: number) => void;
   onSetHold: (direction: 'slow' | 'fast', active: boolean) => void;
   onRemoveNext: () => void;
+  onOpenHelp: () => void;
 }
 
 interface StepButtonProps {
@@ -89,12 +91,14 @@ export function CalibrationPanel({
   skip,
   total,
   holds,
+  helpOpen,
   onNudgeLast,
   onNudgeNext,
   onShiftAll,
   onNudgeClock,
   onSetHold,
   onRemoveNext,
+  onOpenHelp,
 }: CalibrationPanelProps) {
   const canAdjustLast = skip > 0;
   const canAdjustNext = skip < total;
@@ -222,6 +226,16 @@ export function CalibrationPanel({
           disabled={!canAdjustNext}
         >
           Remove next note <kbd aria-hidden="true">Y</kbd>
+        </button>
+        <button
+          className="btn btn-quiet help-button"
+          type="button"
+          onClick={onOpenHelp}
+          aria-haspopup="dialog"
+          aria-expanded={helpOpen}
+          aria-controls="controls-dialog"
+        >
+          Controls <kbd aria-hidden="true">?</kbd>
         </button>
       </div>
     </details>

@@ -136,17 +136,6 @@ export default function App() {
               </svg>
             )}
           </button>
-
-          {/* <button
-            className="btn btn-quiet help-button"
-            type="button"
-            onClick={actions.openHelp}
-            aria-haspopup="dialog"
-            aria-expanded={helper.helpOpen}
-            aria-controls="controls-dialog"
-          >
-            Controls <kbd aria-hidden="true">?</kbd>
-          </button> */}
         </div>
       </header>
 
@@ -179,12 +168,14 @@ export default function App() {
             skip={frame.skip}
             total={frame.total}
             holds={helper.holds}
+            helpOpen={helper.helpOpen}
             onNudgeLast={actions.nudgeLast}
             onNudgeNext={actions.nudgeNext}
             onShiftAll={actions.shiftAll}
             onNudgeClock={actions.nudgeClock}
             onSetHold={actions.setHold}
             onRemoveNext={actions.removeNext}
+            onOpenHelp={actions.openHelp}
           />
 
           <TimingsPanel

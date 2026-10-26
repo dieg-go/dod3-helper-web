@@ -1109,7 +1109,19 @@ kbd {
 }
 
 .cal-remove-row {
+  display: grid;
+  gap: 6px;
   margin-top: 6px;
+}
+
+.cal-remove-row .btn {
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* The quiet Controls button sits in the same stack as Remove next note. */
+.cal-remove-row .help-button {
+  border-color: var(--line-soft);
 }
 
 /* Timings */
