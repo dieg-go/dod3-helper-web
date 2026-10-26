@@ -52,6 +52,7 @@ export interface HelperActions {
   nudgeNext: (delta: number) => void;
   shiftAll: (delta: number) => void;
   nudgeClock: (delta: number) => void;
+  seek: (positionMs: number) => void;
   removeNext: () => void;
   setHold: (direction: 'slow' | 'fast', active: boolean) => void;
   setLayer: (layer: keyof StageLayers, enabled: boolean) => void;
@@ -411,6 +412,33 @@ export function useHelper(): UseHelperResult {
     [finishRun, publishFrame],
   );
 
+  /**
+   * Jump the clock to an absolute position, used by the score-map scrubber.
+   * A stopped run lands paused at that position so it can be resumed from
+   * there; seeking back to zero from complete returns to ready.
+   */
+  const seek = useCallback(
+    (positionMs: number) => {
+      const current = timingsRef.current;
+      const lastIndex = current.length - 1;
+      if (lastIndex < 0 || !Number.isFinite(positionMs)) {
+        return;
+      }
+
+      const now = performance.now();
+      const end = current[lastIndex]!;
+      const target = Math.min(Math.max(positionMs, 0), end);
+      clockRef.current.nudge(now, target - clockRef.current.elapsed(now));
+
+      if (statusRef.current === 'idle' || statusRef.current === 'finished') {
+        commitStatus(target <= 0 ? 'idle' : target >= end ? 'finished' : 'paused');
+      }
+
+      publishFrame(now, true);
+    },
+    [commitStatus, publishFrame],
+  );
+
   const undoRemove = useCallback(() => {
     const snapshot = undoRef.current;
     if (!snapshot) {
@@ -765,6 +793,7 @@ export function useHelper(): UseHelperResult {
       nudgeNext,
       shiftAll: shiftAllNotes,
       nudgeClock,
+      seek,
       removeNext,
       setHold,
       setLayer,
@@ -787,6 +816,7 @@ export function useHelper(): UseHelperResult {
       removeNext,
       resetRun,
       resetTimings,
+      seek,
       setHold,
       setLayer,
       shiftAllNotes,

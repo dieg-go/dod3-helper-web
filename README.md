@@ -9,6 +9,7 @@ The app is fully static: no backend, no accounts, no telemetry. It is ready to d
 - Ships the original 235-note final-boss sequence, from `0` to `394060.727…` ms (`6:34.06`).
 - Reproduces the source's 800×700 ring geometry, note colors, press window, and removal threshold.
 - Maps the song's eight tempo movements under the stage, with a live playhead and the current BPM.
+- Lets you scrub that score map to rewind or fast-forward the run without waiting through it.
 - Lights the stage from the current movement: drifting petals, a bloom behind Mikhail, and a beat-locked pulse that follows the song's tempo.
 - Starts the clock on the first note; supports pause, resume, restart, and hold-to-slow/fast playback.
 - Lets you adjust the last note, the next note, every note, or the playback clock by 50 ms.
@@ -72,6 +73,8 @@ Start the helper the moment you destroy the first note in the game. The first no
 | `?` | Open the controls dialog |
 
 Every action also has an on-screen button, including hold buttons for slower and faster playback.
+
+The score map under the stage is a scrubber as well: click or drag anywhere on it to jump through the sequence, or focus it with `Tab` and use the arrow keys (and `Home`/`End`). Scrubbing a stopped run pauses it at that point, so press `Space` to resume from there. The slider covers the whole run, not just the movement boundaries, so you can land anywhere inside a movement.
 
 On Windows/Linux, `Ctrl` works as listed; on macOS, `Cmd` is treated the same way.
 

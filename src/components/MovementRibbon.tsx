@@ -11,6 +11,7 @@ interface MovementRibbonProps {
   elapsed: number;
   duration: number;
   total: number;
+  onSeek: (positionMs: number) => void;
 }
 
 function rgb(color: readonly [number, number, number]): string {
@@ -19,10 +20,10 @@ function rgb(color: readonly [number, number, number]): string {
 
 /**
  * The score map: one segment per tempo movement, scaled by duration, with the
- * live playhead. It gives the 235-note sequence a visible shape and shows where
- * the run sits in the eight-part song.
+ * live playhead. It doubles as a scrubber, so the eight-part song can be
+ * rewound or fast-forwarded without waiting through it.
  */
-export function MovementRibbon({ elapsed, duration, total }: MovementRibbonProps) {
+export function MovementRibbon({ elapsed, duration, total, onSeek }: MovementRibbonProps) {
   if (total === 0 || TEMPO_SECTIONS.length === 0) {
     return null;
   }
@@ -41,9 +42,14 @@ export function MovementRibbon({ elapsed, duration, total }: MovementRibbonProps
       : `${Math.round(active.startBpm)} → ${Math.round(active.endBpm)} BPM`
     : null;
 
+  const valueText =
+    activeIndex === null
+      ? formatClock(elapsed)
+      : `${formatClock(elapsed)}, movement ${activeIndex + 1} of ${TEMPO_SECTIONS.length}`;
+
   return (
     <figure className="movement" style={{ '--seg': rgb(color) } as CSSProperties}>
-      <div className="movement-track" aria-hidden="true">
+      <div className="movement-track">
         {TEMPO_SECTIONS.map((section, index) => {
           const state =
             index === activeIndex
@@ -55,6 +61,7 @@ export function MovementRibbon({ elapsed, duration, total }: MovementRibbonProps
             <span
               key={`${section.startMs}-${index}`}
               className={`movement-seg${state}`}
+              aria-hidden="true"
               style={
                 {
                   flexGrow: Math.max(section.endMs - section.startMs, 1),
@@ -66,7 +73,22 @@ export function MovementRibbon({ elapsed, duration, total }: MovementRibbonProps
             </span>
           );
         })}
-        <span className="movement-head" style={{ left: `${progress * 100}%` }} />
+        <span
+          className="movement-head"
+          aria-hidden="true"
+          style={{ left: `${progress * 100}%` }}
+        />
+        <input
+          className="movement-scrub"
+          type="range"
+          min={0}
+          max={span}
+          step={50}
+          value={Math.min(elapsed, span)}
+          onChange={(event) => onSeek(event.currentTarget.valueAsNumber)}
+          aria-label="Scrub the sequence"
+          aria-valuetext={valueText}
+        />
       </div>
 
       <figcaption className="movement-meta">

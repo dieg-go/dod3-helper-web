@@ -12,6 +12,7 @@ interface StageProps {
   dataError: string | null;
   onStart: () => void;
   onResetRun: () => void;
+  onSeek: (positionMs: number) => void;
 }
 
 export function Stage({
@@ -24,6 +25,7 @@ export function Stage({
   dataError,
   onStart,
   onResetRun,
+  onSeek,
 }: StageProps) {
   const missingTimings = dataError !== null && total === 0;
   const showOverlay =
@@ -72,7 +74,12 @@ export function Stage({
         ) : null}
       </div>
 
-      <MovementRibbon elapsed={elapsed} duration={duration} total={total} />
+      <MovementRibbon
+        elapsed={elapsed}
+        duration={duration}
+        total={total}
+        onSeek={onSeek}
+      />
     </section>
   );
 }

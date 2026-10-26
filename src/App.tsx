@@ -63,7 +63,8 @@ export default function App() {
   };
 
   // Pointer clicks should not leave a control focused, otherwise a subsequent
-  // Space press would activate that control instead of start/pause.
+  // Space press would activate that control instead of start/pause. The score
+  // map is included so a scrub does not swallow the next Space.
   useEffect(() => {
     const handlePointerUp = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse') {
@@ -75,7 +76,7 @@ export default function App() {
         if (label instanceof HTMLLabelElement) {
           label.control?.blur();
         } else {
-          target.closest('button')?.blur();
+          target.closest<HTMLElement>('button, input[type="range"]')?.blur();
         }
       }
     };
@@ -163,6 +164,7 @@ export default function App() {
           dataError={helper.dataError}
           onStart={actions.toggleRun}
           onResetRun={actions.resetRun}
+          onSeek={actions.seek}
         />
 
         <aside className="rail" id="controls" aria-label="Run controls and tuning" tabIndex={-1}>
